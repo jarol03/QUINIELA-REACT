@@ -1184,3 +1184,67 @@
 /* pvt names with username sub */
 .pvt-names { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .pvt-username-sub { font-size: 11px; color: var(--text-dimmer); }
+
+/* ── RESULTADO DISPLAY MODE ── */
+.resultado-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.res-score-display {
+  font-family: 'Clash Display','Outfit',sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 52px;
+  text-align: center;
+  background: rgba(0,229,160,0.08);
+  border: 1px solid rgba(0,229,160,0.2);
+  border-radius: 8px;
+  padding: 4px 10px;
+}
+
+.res-edit-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 5px 8px;
+  transition: all 0.15s;
+  line-height: 1;
+}
+.res-edit-btn:hover { background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.3); }
+
+.res-clear-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 5px 8px;
+  transition: all 0.15s;
+  line-height: 1;
+  color: var(--text-dimmer);
+}
+.res-clear-btn:hover { background: rgba(255,107,138,0.12); border-color: rgba(255,107,138,0.2); color: var(--danger); }
+
+.res-cancel-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 6px 9px;
+  transition: all 0.15s;
+  line-height: 1;
+}
+.res-cancel-btn:hover { background: rgba(255,107,138,0.12); color: var(--danger); }
+
+.resultado-row.is-editing {
+  border-color: rgba(251,191,36,0.35) !important;
+  background: rgba(251,191,36,0.03) !important;
+}

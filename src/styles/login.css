@@ -25,6 +25,7 @@ body {
   background: var(--bg1);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+  
 }
 
 /* ── BG ── */

@@ -19,6 +19,11 @@ function calcPuntos(pron, partido) {
   return 0;
 }
 
+function getResultado(gL, gV) {
+  if (gL === null || gV === null || gL === undefined || gV === undefined) return "—";
+  return Number(gL) > Number(gV) ? "L" : Number(gL) < Number(gV) ? "V" : "E";
+}
+
 export default function PuntosTab() {
   const [jornadas, setJornadas]   = useState([]);
   const [selectedJ, setSelectedJ] = useState(null);
@@ -30,6 +35,7 @@ export default function PuntosTab() {
   const [toast, setToast]         = useState("");
   const [editRes, setEditRes]     = useState({});
   const [pdfOpen, setPdfOpen]     = useState(false);
+  const [editingIds, setEditingIds] = useState(new Set()); // partidos en modo edición
   const tableRef = useRef(null);
 
   useEffect(() => { fetchJornadas(); }, []);
@@ -54,6 +60,7 @@ export default function PuntosTab() {
     setAllProns(prons || []);
     setUsuarios(usrs || []);
 
+    // Inicializar editores de resultado con valores actuales
     const resMap = {};
     (pts || []).forEach(p => {
       resMap[p.id] = {
@@ -73,17 +80,38 @@ export default function PuntosTab() {
       goles_local_real: Number(r.local),
       goles_visitante_real: Number(r.visitante),
     }).eq("id", partidoId);
-    
     const { data } = await supabase.from("partidos").select("*").eq("jornada_id", selectedJ.id).order("orden");
     setPartidos(data || []);
+    setEditingIds(prev => { const s = new Set(prev); s.delete(partidoId); return s; });
     setSaving(null);
     showToast("Resultado guardado ✓");
   };
 
+  const clearResultado = async (partidoId) => {
+    if (!confirm("¿Quitar el resultado? Los puntos de este partido quedarán en cero.")) return;
+    await supabase.from("partidos").update({
+      goles_local_real: null,
+      goles_visitante_real: null,
+    }).eq("id", partidoId);
+    setEditRes(prev => ({ ...prev, [partidoId]: { local: "", visitante: "" } }));
+    setEditingIds(prev => { const s = new Set(prev); s.delete(partidoId); return s; });
+    const { data } = await supabase.from("partidos").select("*").eq("jornada_id", selectedJ.id).order("orden");
+    setPartidos(data || []);
+    showToast("Resultado eliminado");
+  };
+
+  const toggleEditing = (partidoId) => {
+    setEditingIds(prev => {
+      const s = new Set(prev);
+      s.has(partidoId) ? s.delete(partidoId) : s.add(partidoId);
+      return s;
+    });
+  };
+
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
-  // 1. Calcular estadísticas base y ordenar
-  const tablaBase = usuarios.map(u => {
+  // Calcular tabla de posiciones
+  const tabla = usuarios.map(u => {
     let pts = 0, exactos = 0, resultados = 0;
     partidos.forEach(p => {
       const pron = allProns.find(pr => pr.usuario_id === u.id && pr.partido_id === p.id);
@@ -92,29 +120,16 @@ export default function PuntosTab() {
       else if (puntos === 1) { pts += 1; resultados++; }
     });
     return { ...u, pts, exactos, resultados };
-  }).sort((a, b) => b.pts - a.pts || b.exactos - a.exactos || b.resultados - a.resultados);
+  }).sort((a, b) => b.pts - a.pts || b.exactos - a.exactos);
 
-  // 2. Calcular posiciones reales (manejo de empates)
-  const tablaFinal = tablaBase.map((u, idx) => {
-    if (idx === 0) {
-      u.posReal = 1;
-    } else {
-      const prev = tablaBase[idx - 1];
-      // Si tiene mismos puntos y mismos exactos, es empate
-      const esEmpate = u.pts === prev.pts && u.exactos === prev.exactos;
-      u.posReal = esEmpate ? prev.posReal : idx + 1;
-    }
-    return u;
-  });
-
-  // Datos para el PDF con la posición real
-  const pdfData = tablaFinal.map(u => ({
+  // Datos formateados para el modal PDF
+  const pdfData = tabla.map((u, i) => ({
     nombre: u.nombre || u.username,
     username: u.username,
     pts: u.pts,
     exactos: u.exactos,
     resultados: u.resultados,
-    pos: u.posReal, 
+    pos: i + 1,
   }));
 
   const tieneResultados = partidos.some(p => p.goles_local_real !== null && p.goles_local_real !== undefined);
@@ -123,6 +138,7 @@ export default function PuntosTab() {
     <div className="puntos-tab">
       {toast && <div className="toast">{toast}</div>}
 
+      {/* Selector de jornada */}
       <div className="copiar-section">
         <h3 className="col-label">Selecciona una jornada</h3>
         <div className="jornada-pills">
@@ -138,55 +154,67 @@ export default function PuntosTab() {
 
       {selectedJ && !loading && (
         <div className="puntos-layout">
+
+          {/* ── Ingresar resultados reales ── */}
           <div className="resultados-section">
             <div className="rs-header">
               <h3 className="col-label">Resultados reales</h3>
-              <p className="dim-text">Ingresa marcadores finales</p>
+              <p className="dim-text">Ingresa los marcadores finales para calcular puntos</p>
             </div>
             <div className="resultados-list">
               {partidos.map((p, i) => {
-                const r = editRes[p.id] || { local: "", visitante: "" };
-                const isSaving = saving === p.id;
-                const hasSaved = p.goles_local_real !== null && p.goles_local_real !== undefined;
+                const r          = editRes[p.id] || { local: "", visitante: "" };
+                const isSaving   = saving === p.id;
+                const hasSaved   = p.goles_local_real !== null && p.goles_local_real !== undefined;
+                const isEditing  = editingIds.has(p.id);
+                const showInputs = !hasSaved || isEditing;
                 return (
-                  <div key={p.id} className={`resultado-row ${hasSaved ? "has-result" : ""}`}>
+                  <div key={p.id} className={`resultado-row ${hasSaved ? "has-result" : ""} ${isEditing ? "is-editing" : ""}`}>
                     <span className="resultado-num">{i + 1}</span>
                     <div className="resultado-teams">
                       <span className="rt-team">{p.equipo_local}</span>
                       <span className="rt-vs">vs</span>
                       <span className="rt-team">{p.equipo_visitante}</span>
                     </div>
-                    <div className="resultado-inputs">
-                      <input
-                        className="res-input" type="number" value={r.local}
-                        onChange={e => setEditRes(prev => ({ ...prev, [p.id]: { ...prev[p.id], local: e.target.value } }))}
-                        placeholder="—"
-                      />
-                      <span className="res-dash">–</span>
-                      <input
-                        className="res-input" type="number" value={r.visitante}
-                        onChange={e => setEditRes(prev => ({ ...prev, [p.id]: { ...prev[p.id], visitante: e.target.value } }))}
-                        placeholder="—"
-                      />
-                      <button
-                        className={`res-save-btn ${hasSaved ? "res-saved" : ""}`}
-                        onClick={() => saveResultado(p.id)}
-                        disabled={isSaving || r.local === "" || r.visitante === ""}
-                      >
-                        {isSaving ? "..." : hasSaved ? "✓" : "Guardar"}
-                      </button>
-                    </div>
+
+                    {showInputs ? (
+                      <div className="resultado-inputs">
+                        <input className="res-input" type="number" min="0" value={r.local}
+                          onChange={e => setEditRes(prev => ({ ...prev, [p.id]: { ...prev[p.id], local: e.target.value } }))}
+                          placeholder="—"
+                        />
+                        <span className="res-dash">–</span>
+                        <input className="res-input" type="number" min="0" value={r.visitante}
+                          onChange={e => setEditRes(prev => ({ ...prev, [p.id]: { ...prev[p.id], visitante: e.target.value } }))}
+                          placeholder="—"
+                        />
+                        <button className="res-save-btn" onClick={() => saveResultado(p.id)}
+                          disabled={isSaving || r.local === "" || r.visitante === ""}>
+                          {isSaving ? "..." : "Guardar"}
+                        </button>
+                        {isEditing && (
+                          <button className="res-cancel-btn" onClick={() => toggleEditing(p.id)} title="Cancelar">✕</button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="resultado-display">
+                        <span className="res-score-display">{p.goles_local_real} – {p.goles_visitante_real}</span>
+                        <button className="res-edit-btn" onClick={() => toggleEditing(p.id)} title="Editar resultado">✏️</button>
+                        <button className="res-clear-btn" onClick={() => clearResultado(p.id)} title="Quitar resultado">🗑</button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
           </div>
 
+          {/* ── Tabla de posiciones ── */}
           <div className="tabla-section">
             <div className="tabla-header">
               <div>
                 <h3 className="col-label">Tabla de posiciones</h3>
-                {!tieneResultados && <p className="dim-text">Ingresa resultados para calcular</p>}
+                {!tieneResultados && <p className="dim-text">Ingresa resultados para ver los puntos</p>}
               </div>
               {tieneResultados && (
                 <button className="download-btn" onClick={() => setPdfOpen(true)}>⬇ Exportar PDF</button>
@@ -194,43 +222,64 @@ export default function PuntosTab() {
             </div>
 
             <div ref={tableRef} className="tabla-wrap">
-              <div className="tabla-title-img">{selectedJ.nombre}</div>
+              <div className="tabla-title-img">{selectedJ.nombre} — Tabla de Puntos</div>
               <table className="tabla-puntos">
                 <thead>
                   <tr>
                     <th className="tp-pos">#</th>
                     <th className="tp-user">Participante</th>
                     <th className="tp-pts">Pts</th>
+                    {/* <th className="tp-stat" title="Marcadores exactos">🎯</th>
+                    <th className="tp-stat" title="Solo resultado">✓</th>
+                    {partidos.map((p, i) => (
+                      <th key={p.id} className="tp-partido-col" title={`${p.equipo_local} vs ${p.equipo_visitante}`}>
+                        P{i + 1}
+                      </th>
+                    ))} */}
                   </tr>
                 </thead>
                 <tbody>
-                  {tablaFinal.map((u) => (
-                    <tr key={u.id} className={u.posReal === 1 && u.pts > 0 ? "tp-leader" : ""}>
+                  {tabla.map((u, idx) => (
+                    <tr key={u.id} className={idx === 0 && u.pts > 0 ? "tp-leader" : ""}>
                       <td className="tp-pos-cell">
-                        {u.pts > 0 ? (
-                          u.posReal === 1 ? "🥇" : u.posReal === 2 ? "🥈" : u.posReal === 3 ? "🥉" : u.posReal
-                        ) : u.posReal}
+                        {idx === 0 && u.pts > 0 ? "🥇" : idx === 1 && u.pts > 0 ? "🥈" : idx === 2 && u.pts > 0 ? "🥉" : idx + 1}
                       </td>
                       <td className="tp-user-cell">
                         <div className="tp-avatar">{u.username.charAt(0).toUpperCase()}</div>
                         {u.username}
                       </td>
                       <td className="tp-pts-cell">{u.pts}</td>
+                      {/* <td className="tp-stat-cell tp-exacto">{u.exactos}</td>
+                      <td className="tp-stat-cell tp-resultado">{u.resultados}</td>
+                      {partidos.map(p => {
+                        const pron = allProns.find(pr => pr.usuario_id === u.id && pr.partido_id === p.id);
+                        const pts = calcPuntos(pron, p);
+                        return (
+                          <td key={p.id} className={`tp-pts-cell tp-mini ${pts === 3 ? "pts-3" : pts === 1 ? "pts-1" : pts === 0 ? "pts-0" : "pts-null"}`}>
+                            {pts !== null ? pts : "·"}
+                          </td>
+                        );
+                      })} */}
                     </tr>
                   ))}
                 </tbody>
               </table>
+              <div className="tabla-legend">
+                <span className="legend-item pts-3">3 = exacto</span>
+                <span className="legend-item pts-1">1 = resultado</span>
+                <span className="legend-item pts-0">0 = nada</span>
+              </div>
             </div>
           </div>
         </div>
       )}
-
+      {/* Modal PDF */}
       <PDFExportModal
         open={pdfOpen}
         onClose={() => setPdfOpen(false)}
         type="puntos"
-        title={` ${selectedJ?.nombre || ""}`}
-        subtitle={`${tablaFinal.length} participantes`}
+        title={`Tabla de Puntos — ${selectedJ?.nombre || ""}`}
+        subtitle={`${tabla.length} participantes`}
         jornada={selectedJ?.nombre}
         data={pdfData}
       />
