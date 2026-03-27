@@ -1,0 +1,142 @@
+/* ── PAGE HEADER ── */
+.page-header { margin-bottom: 24px; }
+.page-subtitle { font-size: 14px; color: var(--text-dim); margin-top: 4px; }
+
+/* ── EMPTY / LOADING STATES ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 24px;
+  color: var(--text-dimmer);
+  text-align: center;
+}
+.empty-icon { font-size: 40px; }
+.empty-state p { font-size: 16px; font-weight: 600; color: var(--text-dim); }
+.empty-state span { font-size: 13px; }
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px;
+  color: var(--text-dimmer);
+  font-size: 14px;
+}
+
+/* ── PROGRESS SECTION ── */
+.progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+/* ALREADY SAVED BANNER */
+.already-saved-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(0,229,160,0.08);
+  border: 1px solid rgba(0,229,160,0.25);
+  border-radius: 14px;
+}
+.already-saved-banner .asb-icon { font-size: 20px; flex-shrink: 0; }
+.already-saved-banner div { display: flex; flex-direction: column; gap: 2px; }
+.already-saved-banner strong { font-size: 14px; font-weight: 700; color: var(--accent); }
+.already-saved-banner span   { font-size: 12px; color: var(--text-dim); }
+
+/* UNSAVED BANNER */
+.unsaved-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(251,191,36,0.08);
+  border: 1px solid rgba(251,191,36,0.25);
+  border-radius: 14px;
+}
+.unsaved-banner .asb-icon { font-size: 20px; flex-shrink: 0; }
+.unsaved-banner div { display: flex; flex-direction: column; gap: 2px; }
+.unsaved-banner strong { font-size: 14px; font-weight: 700; color: var(--gold); }
+.unsaved-banner span   { font-size: 12px; color: var(--text-dim); }
+
+/* PROGRESS BAR */
+.progress-bar-wrap { display: flex; flex-direction: column; gap: 6px; }
+.progress-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-dimmer);
+}
+.progress-pct { font-weight: 700; color: var(--accent); }
+
+.progress-bar-track {
+  height: 5px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 100px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 100px;
+  transition: width 0.4s cubic-bezier(0.16,1,0.3,1);
+}
+
+/* ── PARTIDO ROW STATES ── */
+.partido-saved {
+  border-color: rgba(0,229,160,0.25) !important;
+}
+.partido-modified {
+  border-color: rgba(251,191,36,0.35) !important;
+}
+
+/* Score input saved state — solo borde, sin fondo para no romper en móvil */
+.score-input-saved {
+  border-color: rgba(0,229,160,0.45) !important;
+  color: var(--accent) !important;
+}
+/* Input con valor guardado pero editable */
+.score-input-ok {
+  border-color: rgba(0,229,160,0.35) !important;
+}
+
+/* ── PARTIDO STATUS ICON ── */
+.partido-status-icon { flex-shrink: 0; width: 22px; text-align: center; }
+
+.psi { font-size: 14px; display: inline-block; }
+.psi-ok       { color: var(--accent); }
+.psi-modified { color: var(--gold); }
+.psi-ready    { color: var(--accent2); opacity: 0.7; }
+.psi-locked   { opacity: 0.5; }
+.psi-empty    { color: var(--text-dimmer); font-size: 18px; }
+
+/* ── SAVE BTN DONE STATE ── */
+.save-btn-done {
+  background: rgba(0,229,160,0.12) !important;
+  color: var(--accent) !important;
+  border: 1px solid rgba(0,229,160,0.3) !important;
+  box-shadow: none !important;
+  cursor: default !important;
+}
+.save-btn-done:hover { transform: none !important; opacity: 1 !important; }
+
+/* ── TOAST ERROR ── */
+.toast-error {
+  border-color: rgba(255,107,138,0.4) !important;
+  color: var(--danger) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 20px rgba(255,107,138,0.1) !important;
+}
+
+/* ── PRONOSTICOS HEADER ── */
+.pronosticos-header-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
