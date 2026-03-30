@@ -87,17 +87,18 @@ export default function AdminPanel({ user, onLogout }) {
    TAB: JORNADAS
 ═══════════════════════════════════════ */
 function JornadasTab() {
-  const [jornadas, setJornadas]         = useState([]);
-  const [selectedJ, setSelectedJ]       = useState(null);
-  const [partidos, setPartidos]         = useState([]);
-  const [newName, setNewName]           = useState("");
-  const [newFecha, setNewFecha]         = useState("");
-  const [newLocal, setNewLocal]         = useState("");
-  const [newVisitante, setNewVisitante] = useState("");
-  const [creating, setCreating]         = useState(false);
-  const [toast, setToast]               = useState("");
-  const [editFechaId, setEditFechaId]   = useState(null);
-  const [editFechaVal, setEditFechaVal] = useState("");
+  const [jornadas,      setJornadas]      = useState([]);
+  const [selectedJ,     setSelectedJ]     = useState(null);
+  const [partidos,      setPartidos]      = useState([]);
+  const [newName,       setNewName]       = useState("");
+  const [newLocal,      setNewLocal]      = useState("");
+  const [newVisitante,  setNewVisitante]  = useState("");
+  const [newPartidoFecha, setNewPartidoFecha] = useState("");
+  const [creating,      setCreating]      = useState(false);
+  const [toast,         setToast]         = useState("");
+  // Edición de fecha por partido
+  const [editFechaPartidoId, setEditFechaPartidoId] = useState(null);
+  const [editFechaPartidoVal, setEditFechaPartidoVal] = useState("");
 
   useEffect(() => { fetchJornadas(); }, []);
 
@@ -114,8 +115,8 @@ function JornadasTab() {
   const createJornada = async () => {
     if (!newName.trim()) return;
     setCreating(true);
-    await supabase.from("jornadas").insert({ nombre: newName.trim(), fecha_limite: newFecha || null, terminada: false });
-    setNewName(""); setNewFecha("");
+    await supabase.from("jornadas").insert({ nombre: newName.trim(), terminada: false });
+    setNewName("");
     fetchJornadas();
     showToast("Jornada creada ✓");
     setCreating(false);
@@ -139,25 +140,18 @@ function JornadasTab() {
     showToast(nuevoEstado ? "Jornada terminada" : "Jornada reactivada ✓");
   };
 
-  const startEditFecha = (j) => { setEditFechaId(j.id); setEditFechaVal(j.fecha_limite || ""); };
-  const saveFecha = async (id) => {
-    await supabase.from("jornadas").update({ fecha_limite: editFechaVal || null }).eq("id", id);
-    setEditFechaId(null);
-    fetchJornadas();
-    showToast("Fecha actualizada ✓");
-  };
-
   const selectJornada = (j) => { setSelectedJ(j); fetchPartidos(j.id); };
 
   const addPartido = async () => {
     if (!newLocal.trim() || !newVisitante.trim()) return;
     await supabase.from("partidos").insert({
-      jornada_id: selectedJ.id,
-      equipo_local: newLocal.trim(),
+      jornada_id:       selectedJ.id,
+      equipo_local:     newLocal.trim(),
       equipo_visitante: newVisitante.trim(),
-      orden: partidos.length + 1,
+      orden:            partidos.length + 1,
+      fecha_limite:     newPartidoFecha || null,
     });
-    setNewLocal(""); setNewVisitante("");
+    setNewLocal(""); setNewVisitante(""); setNewPartidoFecha("");
     fetchPartidos(selectedJ.id);
     showToast("Partido agregado ✓");
   };
@@ -168,11 +162,22 @@ function JornadasTab() {
     fetchPartidos(selectedJ.id);
   };
 
+  const startEditFechaPartido = (p) => {
+    setEditFechaPartidoId(p.id);
+    setEditFechaPartidoVal(p.fecha_limite || "");
+  };
+
+  const saveFechaPartido = async (id) => {
+    await supabase.from("partidos").update({ fecha_limite: editFechaPartidoVal || null }).eq("id", id);
+    setEditFechaPartidoId(null);
+    fetchPartidos(selectedJ.id);
+    showToast("Fecha del partido actualizada ✓");
+  };
+
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
   const statusLabel = (j) => {
     if (j.terminada) return { text: "Terminada", cls: "tag-done" };
-    if (j.fecha_limite && new Date() > new Date(j.fecha_limite)) return { text: "Cerrada", cls: "tag-closed" };
     return { text: "Activa", cls: "tag-open" };
   };
 
@@ -180,15 +185,13 @@ function JornadasTab() {
     <div className="jornadas-tab">
       {toast && <div className="toast">{toast}</div>}
       <div className="jornadas-layout">
+        {/* ── Col izq: jornadas ── */}
         <div className="jornadas-col">
           <div className="col-section">
             <h3 className="col-label">Nueva jornada</h3>
             <div className="create-stack">
-              <input className="admin-input" placeholder="Nombre de la jornada..." value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === "Enter" && createJornada()} />
-              <div className="datetime-row">
-                <label className="dt-label">Fecha límite (opcional)</label>
-                <DateTimePicker value={newFecha} onChange={setNewFecha} placeholder="Sin fecha límite — click para agregar" />
-              </div>
+              <input className="admin-input" placeholder="Nombre de la jornada..." value={newName}
+                onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === "Enter" && createJornada()} />
               <button className="admin-btn-primary w-full" onClick={createJornada} disabled={creating || !newName.trim()}>
                 {creating ? "Creando..." : "+ Crear jornada"}
               </button>
@@ -201,7 +204,6 @@ function JornadasTab() {
               {jornadas.length === 0 && <p className="dim-text">Sin jornadas aún.</p>}
               {jornadas.map(j => {
                 const st = statusLabel(j);
-                const isEditing = editFechaId === j.id;
                 return (
                   <div key={j.id} className={`jornada-item ${selectedJ?.id === j.id ? "selected" : ""} ${j.terminada ? "item-done" : ""}`}>
                     <div className="jornada-item-top" onClick={() => selectJornada(j)}>
@@ -216,20 +218,6 @@ function JornadasTab() {
                         <button className="icon-btn danger" onClick={() => deleteJornada(j.id)}>🗑</button>
                       </div>
                     </div>
-                    <div className="jornada-item-fecha" onClick={e => e.stopPropagation()}>
-                      {isEditing ? (
-                        <div className="fecha-edit-row">
-                          <DateTimePicker value={editFechaVal} onChange={setEditFechaVal} placeholder="Sin fecha límite" />
-                          <button className="fecha-save-btn" onClick={() => saveFecha(j.id)}>Guardar</button>
-                          <button className="fecha-cancel-btn" onClick={() => setEditFechaId(null)}>✕</button>
-                        </div>
-                      ) : (
-                        <button className="fecha-display-btn" onClick={() => startEditFecha(j)}>
-                          {j.fecha_limite ? `⏰ ${formatDisplay(j.fecha_limite)}` : "⏰ Sin fecha límite — click para agregar"}
-                          <span className="fecha-edit-hint">✏️</span>
-                        </button>
-                      )}
-                    </div>
                   </div>
                 );
               })}
@@ -237,6 +225,7 @@ function JornadasTab() {
           </div>
         </div>
 
+        {/* ── Col der: partidos ── */}
         <div className="partidos-col">
           {!selectedJ ? (
             <div className="empty-state-col"><span style={{ fontSize: 40 }}>👈</span><p>Selecciona una jornada</p></div>
@@ -247,27 +236,59 @@ function JornadasTab() {
                 <p className="dim-text" style={{marginBottom:12}}>{partidos.length} partido{partidos.length !== 1 ? "s" : ""}</p>
                 <div className="create-stack">
                   <div className="partido-inputs-row">
-                    <input className="admin-input" placeholder="Equipo local" value={newLocal} onChange={e => setNewLocal(e.target.value)} onKeyDown={e => e.key === "Enter" && addPartido()} />
+                    <input className="admin-input" placeholder="Equipo local" value={newLocal}
+                      onChange={e => setNewLocal(e.target.value)} onKeyDown={e => e.key === "Enter" && addPartido()} />
                     <span className="vs-mini-label">vs</span>
-                    <input className="admin-input" placeholder="Equipo visitante" value={newVisitante} onChange={e => setNewVisitante(e.target.value)} onKeyDown={e => e.key === "Enter" && addPartido()} />
+                    <input className="admin-input" placeholder="Equipo visitante" value={newVisitante}
+                      onChange={e => setNewVisitante(e.target.value)} onKeyDown={e => e.key === "Enter" && addPartido()} />
                   </div>
-                  <button className="admin-btn-primary" onClick={addPartido} disabled={!newLocal.trim() || !newVisitante.trim()}>+ Agregar partido</button>
+                  <div className="datetime-row">
+                    <label className="dt-label">Fecha límite del partido (opcional)</label>
+                    <DateTimePicker value={newPartidoFecha} onChange={setNewPartidoFecha} placeholder="Sin fecha límite — click para agregar" />
+                  </div>
+                  <button className="admin-btn-primary" onClick={addPartido} disabled={!newLocal.trim() || !newVisitante.trim()}>
+                    + Agregar partido
+                  </button>
                 </div>
               </div>
+
               <div className="col-section">
                 <div className="partido-items">
                   {partidos.length === 0 && <p className="dim-text">Sin partidos aún.</p>}
-                  {partidos.map((p, i) => (
-                    <div key={p.id} className="partido-item">
-                      <span className="partido-item-num">{i + 1}</span>
-                      <div className="partido-item-teams">
-                        <span className="pit-team">{p.equipo_local}</span>
-                        <span className="pit-vs">vs</span>
-                        <span className="pit-team">{p.equipo_visitante}</span>
+                  {partidos.map((p, i) => {
+                    const isClosed = p.fecha_limite && new Date() > new Date(p.fecha_limite);
+                    const isEditingFecha = editFechaPartidoId === p.id;
+                    return (
+                      <div key={p.id} className={`partido-item-admin ${isClosed ? "partido-item-closed" : ""}`}>
+                        <div className="partido-item-top">
+                          <span className="partido-item-num">{i + 1}</span>
+                          <div className="partido-item-teams">
+                            <span className="pit-team">{p.equipo_local}</span>
+                            <span className="pit-vs">vs</span>
+                            <span className="pit-team">{p.equipo_visitante}</span>
+                          </div>
+                          <button className="icon-btn danger" onClick={() => deletePartido(p.id)}>🗑</button>
+                        </div>
+                        {/* Fecha límite por partido */}
+                        <div className="partido-item-fecha" onClick={e => e.stopPropagation()}>
+                          {isEditingFecha ? (
+                            <div className="fecha-edit-row">
+                              <DateTimePicker value={editFechaPartidoVal} onChange={setEditFechaPartidoVal} placeholder="Sin fecha límite" />
+                              <button className="fecha-save-btn" onClick={() => saveFechaPartido(p.id)}>Guardar</button>
+                              <button className="fecha-cancel-btn" onClick={() => setEditFechaPartidoId(null)}>✕</button>
+                            </div>
+                          ) : (
+                            <button className="fecha-display-btn" onClick={() => startEditFechaPartido(p)}>
+                              {p.fecha_limite
+                                ? `${isClosed ? "🔒" : "⏰"} ${formatDisplay(p.fecha_limite)}`
+                                : "⏰ Sin fecha límite — click para agregar"}
+                              <span className="fecha-edit-hint">✏️</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <button className="icon-btn danger" onClick={() => deletePartido(p.id)}>🗑</button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </>
@@ -341,11 +362,11 @@ function UsuariosTab() {
           <div className="add-user-fields">
             <div className="add-user-field">
               <label className="dt-label">Nombre completo</label>
-              <input className="admin-input" placeholder="Ej: Luis Espinal..." value={newNombre} onChange={e => setNewNombre(e.target.value)} onKeyDown={e => e.key === "Enter" && createUser()} />
+              <input className="admin-input" placeholder="Ej: Juan García..." value={newNombre} onChange={e => setNewNombre(e.target.value)} onKeyDown={e => e.key === "Enter" && createUser()} />
             </div>
             <div className="add-user-field">
               <label className="dt-label">Usuario (para login)</label>
-              <input className="admin-input" placeholder="Ej: lespinal02 (sin espacios)..." value={newUser} onChange={e => setNewUser(e.target.value)} onKeyDown={e => e.key === "Enter" && createUser()} />
+              <input className="admin-input" placeholder="Ej: juangarcia (sin espacios)..." value={newUser} onChange={e => setNewUser(e.target.value)} onKeyDown={e => e.key === "Enter" && createUser()} />
             </div>
           </div>
           <button className="admin-btn-primary w-full" onClick={createUser} disabled={creating || !newUser.trim()}>

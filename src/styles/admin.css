@@ -251,8 +251,8 @@
   padding: 12px 14px 8px;
 }
 
-.jornada-item-info { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
-.jornada-item-name { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jornada-item-info { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; align-items: start; margin-left: 10px;}
+.jornada-item-name { font-size: 16px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .item-tag {
   display: inline-block;
@@ -273,7 +273,7 @@
 .toggle-btn {
   font-size: 12px;
   font-weight: 600;
-  padding: 5px 10px;
+  padding: 8px 13px;
   border-radius: 8px;
   cursor: pointer;
   border: 1px solid;
@@ -392,7 +392,7 @@
   border-radius: 8px;
   color: var(--text-dimmer);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 18px;
   padding: 5px 8px;
   transition: all 0.15s;
   line-height: 1;
@@ -1247,4 +1247,106 @@
 .resultado-row.is-editing {
   border-color: rgba(251,191,36,0.35) !important;
   background: rgba(251,191,36,0.03) !important;
+}
+
+/* ── PUNTOS INNER TABS ── */
+.puntos-inner-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  padding-bottom: 0;
+}
+
+.puntos-inner-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 18px;
+  transition: all 0.2s;
+  margin-bottom: -1px;
+}
+.puntos-inner-tab:hover { color: var(--text); }
+.puntos-inner-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── GLOBAL RANKING ── */
+.global-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.global-tabla-wrap {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  overflow-x: auto;
+}
+
+.global-tabla { min-width: 400px; }
+
+/* tp-user-names with sub */
+.tp-user-names { display: flex; flex-direction: column; gap: 1px; }
+.tp-username-sub { font-size: 10px; color: var(--text-dimmer); font-weight: 400; }
+
+/* ── PARTIDO ITEM ADMIN (with fecha per partido) ── */
+.partido-item-admin {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  overflow: visible;
+  margin-bottom: 6px;
+  transition: border-color 0.2s;
+}
+.partido-item-admin:hover { border-color: rgba(255,255,255,0.14); }
+.partido-item-admin.partido-item-closed { opacity: 0.65; }
+.partido-item-admin.partido-item-closed .fecha-display-btn { color: rgba(255,107,138,0.7); }
+
+.partido-item-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 6px;
+}
+.partido-item-fecha { padding: 0 12px 10px; }
+
+/* ── JORNADA CARD PARTIAL STATE ── */
+.jornada-card.partial {
+  border-color: rgba(251,191,36,0.25);
+}
+.jornada-card.partial::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gold), var(--accent2));
+  border-radius: 2px 2px 0 0;
+}
+.jornada-card.partial .jornada-card-tag { color: var(--gold); }
+
+/* ── PARTIDO FECHA IN USER VIEW ── */
+.partido-teams-inner { display: flex; flex-direction: column; gap: 2px; }
+.team-vs-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.partido-fecha {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.partido-fecha-open   { color: rgba(0,229,160,0.7); }
+.partido-fecha-closed { color: rgba(255,107,138,0.6); }
+
+/* status badge partial */
+.status-badge.partial {
+  background: rgba(251,191,36,0.10);
+  color: var(--gold);
+  border: 1px solid rgba(251,191,36,0.25);
 }

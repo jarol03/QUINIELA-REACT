@@ -112,6 +112,8 @@ export default function PDFExportModal({ open, onClose, title, subtitle, type, d
       const maxRows = Math.floor(tableH / rowH);
 
       columns.forEach((colData, ci) => {
+
+        
         const cx = PAD + ci * (colW + 3);
         const rightEdge = cx + colW;
 
