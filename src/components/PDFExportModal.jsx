@@ -52,7 +52,7 @@ export default function PDFExportModal({ open, onClose, title, subtitle, type, d
       const PAD = 12;
 
       // --- LÓGICA DE DESPLAZAMIENTO (Solo para previas) ---
-      const offsetMap = { 1: 90, 2: 50, 3: 35, 4: 20, 5: 17 };
+      const offsetMap = { 1: 90, 2: 40, 3: 20, 4: 12, 5: 5 };
       const currentOffset = type === "previas" ? (offsetMap[cols] || 17) : 17;
       const dataBlockWidth = type === "previas" ? currentOffset + 5 : 25; 
 
@@ -112,8 +112,6 @@ export default function PDFExportModal({ open, onClose, title, subtitle, type, d
       const maxRows = Math.floor(tableH / rowH);
 
       columns.forEach((colData, ci) => {
-
-        
         const cx = PAD + ci * (colW + 3);
         const rightEdge = cx + colW;
 
@@ -277,7 +275,7 @@ export default function PDFExportModal({ open, onClose, title, subtitle, type, d
             <div className="pdfm-field">
               <label className="pdfm-label">Número de columnas</label>
               <div className="pdfm-cols-btns">
-                {[1, 2, 3, 4, 5].map(n => (
+                {[1, 2, 3].map(n => (
                   <button key={n} className={`pdfm-col-btn ${cols === n ? "active" : ""}`} onClick={() => setCols(n)}>{n}</button>
                 ))}
               </div>
@@ -297,12 +295,12 @@ export default function PDFExportModal({ open, onClose, title, subtitle, type, d
                   <input type="checkbox" checked={showUser} onChange={e => setShowUser(e.target.checked)} />
                   <span>Mostrar @usuario bajo el nombre</span>
                 </label>
-                {type === "previas" && (
+                {/* {type === "previas" && (
                   <label className="pdfm-check">
                     <input type="checkbox" checked={showHora} onChange={e => setShowHora(e.target.checked)} />
                     <span>Mostrar hora del pronóstico</span>
                   </label>
-                )}
+                )} */}
               </div>
             </div>
             <button className="pdfm-generate-btn" onClick={generatePDF} disabled={generating}>
