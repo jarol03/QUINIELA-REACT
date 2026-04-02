@@ -303,14 +303,16 @@ function JornadasTab() {
    TAB: USUARIOS
 ═══════════════════════════════════════ */
 function UsuariosTab() {
-  const [usuarios, setUsuarios] = useState([]);
-  const [newUser, setNewUser]   = useState("");
-  const [newNombre, setNewNombre] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [search, setSearch]     = useState("");
-  const [toast, setToast]       = useState("");
-  const [editingId, setEditingId] = useState(null);
-  const [editNombre, setEditNombre] = useState("");
+  const [usuarios,    setUsuarios]    = useState([]);
+  const [newUser,     setNewUser]     = useState("");
+  const [newNombre,   setNewNombre]   = useState("");
+  const [creating,    setCreating]    = useState(false);
+  const [search,      setSearch]      = useState("");
+  const [toast,       setToast]       = useState("");
+  const [editingId,   setEditingId]   = useState(null);
+  const [editNombre,  setEditNombre]  = useState("");
+  const [editUsername, setEditUsername] = useState("");
+  const [savingEdit,  setSavingEdit]  = useState(false);
 
   useEffect(() => { fetchUsuarios(); }, []);
 
@@ -320,7 +322,7 @@ function UsuariosTab() {
   };
 
   const createUser = async () => {
-    const username = newUser.trim().toLowerCase();
+    const username = newUser.trim().toLowerCase().replace(/\s+/g, "");
     if (!username) return;
     setCreating(true);
     const { error } = await supabase.from("usuarios").insert({
@@ -340,14 +342,48 @@ function UsuariosTab() {
     showToast("Usuario eliminado");
   };
 
-  const saveNombre = async (id) => {
-    await supabase.from("usuarios").update({ nombre: editNombre.trim() }).eq("id", id);
-    setEditingId(null);
-    fetchUsuarios();
-    showToast("Nombre actualizado ✓");
+  const startEdit = (u) => {
+    setEditingId(u.id);
+    setEditNombre(u.nombre || u.username);
+    setEditUsername(u.username);
+  };
+
+  const saveEdit = async (id) => {
+    const nuevoUsername = editUsername.trim().toLowerCase().replace(/\s+/g, "");
+    const nuevoNombre   = editNombre.trim();
+    if (!nuevoUsername) return showToast("El usuario no puede estar vacío.");
+
+    setSavingEdit(true);
+
+    // Verificar si el nuevo username ya existe (en otro usuario)
+    const usuarioActual = usuarios.find(u => u.id === id);
+    if (nuevoUsername !== usuarioActual.username) {
+      const { data: existe } = await supabase
+        .from("usuarios").select("id").eq("username", nuevoUsername).single();
+      if (existe) {
+        showToast("Ese usuario ya existe, elige otro.");
+        setSavingEdit(false);
+        return;
+      }
+    }
+
+    const { error } = await supabase.from("usuarios").update({
+      username: nuevoUsername,
+      nombre:   nuevoNombre || nuevoUsername,
+    }).eq("id", id);
+
+    if (!error) {
+      setEditingId(null);
+      fetchUsuarios();
+      showToast("Usuario actualizado ✓");
+    } else {
+      showToast("Error al actualizar.");
+    }
+    setSavingEdit(false);
   };
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
+
   const filtered = usuarios.filter(u =>
     u.username.includes(search.toLowerCase()) ||
     (u.nombre || "").toLowerCase().includes(search.toLowerCase())
@@ -357,59 +393,92 @@ function UsuariosTab() {
     <div className="usuarios-tab">
       {toast && <div className="toast">{toast}</div>}
       <div className="usuarios-layout">
+
+        {/* Agregar */}
         <div className="usuarios-add-card">
           <h3 className="col-label">Agregar participante</h3>
           <div className="add-user-fields">
             <div className="add-user-field">
               <label className="dt-label">Nombre completo</label>
-              <input className="admin-input" placeholder="Ej: Juan García..." value={newNombre} onChange={e => setNewNombre(e.target.value)} onKeyDown={e => e.key === "Enter" && createUser()} />
+              <input className="admin-input" placeholder="Ej: Juan García..." value={newNombre}
+                onChange={e => setNewNombre(e.target.value)} onKeyDown={e => e.key === "Enter" && createUser()} />
             </div>
             <div className="add-user-field">
               <label className="dt-label">Usuario (para login)</label>
-              <input className="admin-input" placeholder="Ej: juangarcia (sin espacios)..." value={newUser} onChange={e => setNewUser(e.target.value)} onKeyDown={e => e.key === "Enter" && createUser()} />
+              <input className="admin-input" placeholder="Ej: juangarcia (sin espacios)..." value={newUser}
+                onChange={e => setNewUser(e.target.value)} onKeyDown={e => e.key === "Enter" && createUser()} />
             </div>
           </div>
           <button className="admin-btn-primary w-full" onClick={createUser} disabled={creating || !newUser.trim()}>
             {creating ? "..." : "+ Agregar participante"}
           </button>
-          <p className="field-hint" style={{marginTop:8}}>El usuario ingresa con el <strong>usuario</strong> (sin contraseña). El nombre se muestra en las tablas.</p>
+          <p className="field-hint" style={{marginTop:8}}>
+            El usuario ingresa con el <strong>usuario</strong> (sin contraseña). El nombre se muestra en las tablas.
+          </p>
         </div>
+
+        {/* Lista */}
         <div className="usuarios-list-card">
           <div className="usuarios-list-header">
             <h3 className="col-label">Participantes ({usuarios.length})</h3>
-            <input className="admin-input admin-input-sm" placeholder="🔍 Buscar..." value={search} onChange={e => setSearch(e.target.value)} style={{ maxWidth: 200 }} />
+            <input className="admin-input admin-input-sm" placeholder="🔍 Buscar..." value={search}
+              onChange={e => setSearch(e.target.value)} style={{ maxWidth: 200 }} />
           </div>
           <div className="usuarios-grid">
             {filtered.length === 0 && <p className="dim-text">Sin resultados.</p>}
             {filtered.map((u, i) => (
               <div key={u.id} className="user-card" style={{ animationDelay: `${i * 0.03}s` }}>
                 <div className="user-card-avatar">{(u.nombre || u.username).charAt(0).toUpperCase()}</div>
+
                 <div className="user-card-info">
                   {editingId === u.id ? (
-                    <div className="user-edit-row">
-                      <input
-                        className="admin-input admin-input-sm"
-                        value={editNombre}
-                        onChange={e => setEditNombre(e.target.value)}
-                        onKeyDown={e => { if (e.key === "Enter") saveNombre(u.id); if (e.key === "Escape") setEditingId(null); }}
-                        autoFocus
-                      />
-                      <button className="fecha-save-btn" onClick={() => saveNombre(u.id)}>✓</button>
-                      <button className="fecha-cancel-btn" onClick={() => setEditingId(null)}>✕</button>
+                    /* ── Modo edición ── */
+                    <div className="user-edit-fields">
+                      <div className="user-edit-field">
+                        <label className="user-edit-label">Nombre</label>
+                        <div className="user-edit-row">
+                          <input
+                            className="admin-input admin-input-sm"
+                            value={editNombre}
+                            onChange={e => setEditNombre(e.target.value)}
+                            placeholder="Nombre completo"
+                            autoFocus
+                          />
+                        </div>
+                      </div>
+                      <div className="user-edit-field">
+                        <label className="user-edit-label">Usuario (login)</label>
+                        <div className="user-edit-row">
+                          <input
+                            className="admin-input admin-input-sm"
+                            value={editUsername}
+                            onChange={e => setEditUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
+                            placeholder="username"
+                          />
+                        </div>
+                      </div>
+                      <div className="user-edit-actions">
+                        <button className="fecha-save-btn" onClick={() => saveEdit(u.id)} disabled={savingEdit}>
+                          {savingEdit ? "..." : "✓ Guardar"}
+                        </button>
+                        <button className="fecha-cancel-btn" onClick={() => setEditingId(null)}>✕ Cancelar</button>
+                      </div>
                     </div>
                   ) : (
+                    /* ── Modo visualización ── */
                     <>
                       <span className="user-card-name">{u.nombre || u.username}</span>
                       <span className="user-card-username">@{u.username}</span>
                     </>
                   )}
                 </div>
-                <div className="user-card-actions">
-                  {editingId !== u.id && (
-                    <button className="icon-btn" onClick={() => { setEditingId(u.id); setEditNombre(u.nombre || u.username); }} title="Editar nombre">✏️</button>
-                  )}
-                  <button className="user-card-delete" onClick={() => deleteUser(u.id, u.nombre || u.username)}>✕</button>
-                </div>
+
+                {editingId !== u.id && (
+                  <div className="user-card-actions">
+                    <button className="icon-btn" onClick={() => startEdit(u)} title="Editar">✏️</button>
+                    <button className="user-card-delete" onClick={() => deleteUser(u.id, u.nombre || u.username)}>✕</button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

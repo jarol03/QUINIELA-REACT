@@ -251,8 +251,8 @@
   padding: 12px 14px 8px;
 }
 
-.jornada-item-info { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; align-items: start; margin-left: 10px;}
-.jornada-item-name { font-size: 16px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jornada-item-info { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.jornada-item-name { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .item-tag {
   display: inline-block;
@@ -273,7 +273,7 @@
 .toggle-btn {
   font-size: 12px;
   font-weight: 600;
-  padding: 8px 13px;
+  padding: 5px 10px;
   border-radius: 8px;
   cursor: pointer;
   border: 1px solid;
@@ -392,7 +392,7 @@
   border-radius: 8px;
   color: var(--text-dimmer);
   cursor: pointer;
-  font-size: 18px;
+  font-size: 14px;
   padding: 5px 8px;
   transition: all 0.15s;
   line-height: 1;
@@ -1291,7 +1291,7 @@
   overflow-x: auto;
 }
 
-.global-tabla { min-width: 400px; }
+.global-tabla { min-width: 600px; }
 
 /* tp-user-names with sub */
 .tp-user-names { display: flex; flex-direction: column; gap: 1px; }
@@ -1349,4 +1349,58 @@
   background: rgba(251,191,36,0.10);
   color: var(--gold);
   border: 1px solid rgba(251,191,36,0.25);
+}
+
+/* ── EMPATES EN TABLA ── */
+/* Cuando hay empate, la posición se muestra con fondo suave del color de medalla */
+.tp-pos-cell {
+  font-size: 16px;
+  text-align: center;
+  min-width: 36px;
+}
+
+/* Filas empatadas en 2do y 3er lugar también tienen color suave */
+.tabla-puntos tbody tr:not(.tp-leader) td.tp-pos-cell {
+  color: var(--text-dim);
+}
+
+/* El número de posición después de un grupo empatado se muestra con acento */
+.tabla-puntos tbody tr td.tp-pos-cell-skipped {
+  color: var(--accent2);
+  font-weight: 700;
+}
+
+/* ── USER EDIT EXPANDED ── */
+.user-edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.user-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.user-edit-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dimmer);
+}
+
+.user-edit-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+/* Expandir la card cuando está en modo edición */
+.user-card:has(.user-edit-fields) {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
 }
