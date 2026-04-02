@@ -270,7 +270,7 @@ export default function UserPanel({ user, onLogout }) {
                   <div className="empty-state">
                     <span className="empty-icon">🏟️</span>
                     <p>Sin jornadas disponibles</p>
-                    <span>El admin abrirá las jornadas pronto.</span>
+                    <span>Luis abrirá las jornadas pronto.</span>
                   </div>
                 )}
 
@@ -394,7 +394,7 @@ export default function UserPanel({ user, onLogout }) {
               <div className="empty-state">
                 <span className="empty-icon">📊</span>
                 <p>Aún sin resultados</p>
-                <span>Cuando el admin ingrese resultados verás tus puntos aquí.</span>
+                <span>Cuando Luis ingrese resultados verás tus puntos aquí.</span>
               </div>
             ) : (
               <>
