@@ -513,15 +513,15 @@ export default function UserPanel({ user, onLogout }) {
                   return (
                     <div key={u.id} className={`ranking-row ${esMio ? "ranking-row-me" : ""} ${u.pos <= 3 && u.pts > 0 ? `ranking-row-top${u.pos}` : ""}`}>
                       <div className="rr-pos">{medalEmoji(u.pos, u.pts)}</div>
-                      <div className="rr-avatar">{(u.nombre || u.username).charAt(0).toUpperCase()}</div>
+                      <div className="rr-avatar">{(u.nombre).charAt(0).toUpperCase()}</div>
                       <div className="rr-info">
                         <span className="rr-nombre">
                           {u.nombre || u.username}
                           {esMio && <span className="rr-yo"> (tú)</span>}
                         </span>
-                        {u.nombre && u.nombre !== u.username && (
+                        {/* {u.nombre && u.nombre !== u.username && (
                           <span className="rr-username">@{u.username}</span>
-                        )}
+                        )} */}
                       </div>
                       <div className="rr-pts">
                         <span className="rr-pts-num">{u.pts}</span>
