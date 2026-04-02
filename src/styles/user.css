@@ -481,3 +481,104 @@
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ── MIS PUNTOS — ACCORDION ── */
+.mjp-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+.mjp-card:hover { border-color: rgba(255,255,255,0.14); }
+
+.mjp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.mjp-row:active { opacity: 0.8; }
+
+.mjp-row-left  { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.mjp-row-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+.mjp-nombre { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.mjp-bar-wrap { width: 100%; }
+.mjp-bar-track { height: 5px; background: rgba(255,255,255,0.07); border-radius: 100px; overflow: hidden; }
+.mjp-bar-fill  { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 100px; transition: width 0.5s cubic-bezier(0.16,1,0.3,1); min-width: 2px; }
+
+.mjp-pts { font-family: 'Clash Display','Outfit',sans-serif; font-size: 20px; font-weight: 700; color: var(--text); min-width: 28px; text-align: right; }
+.mjp-chevron { font-size: 10px; color: var(--text-dimmer); }
+
+/* ── DESGLOSE POR PARTIDO ── */
+.mjp-partidos {
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding: 8px 0 4px;
+}
+
+.mjp-partido-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.15s;
+}
+.mjp-partido-row:last-child { border-bottom: none; }
+
+/* Colores por resultado */
+.mjp-exacto   { background: rgba(0,229,160,0.05); }
+.mjp-resultado { background: rgba(59,130,246,0.04); }
+.mjp-nada     { background: transparent; }
+.mjp-sin-pron { background: transparent; opacity: 0.6; }
+
+.mjp-p-num {
+  font-size: 11px; font-weight: 700; color: var(--text-dimmer);
+  min-width: 16px; flex-shrink: 0;
+}
+
+.mjp-p-info { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+
+.mjp-p-teams {
+  font-size: 13px; font-weight: 700; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mjp-p-vs { font-size: 10px; color: var(--text-dimmer); margin: 0 3px; }
+
+.mjp-p-scores { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.mjp-p-real {
+  font-size: 11px; color: var(--text-dimmer);
+}
+.mjp-p-real strong { color: var(--text); font-weight: 700; }
+
+.mjp-p-pron {
+  font-size: 11px; color: var(--text-dimmer);
+}
+.mjp-p-pron strong { color: var(--accent2); font-weight: 700; }
+
+.mjp-p-sin { font-size: 11px; color: var(--text-dimmer); font-style: italic; }
+
+/* Badges de puntos */
+.mjp-p-badge { flex-shrink: 0; }
+
+.mjp-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+.mjp-badge-3    { background: rgba(0,229,160,0.15); color: var(--accent); border: 1px solid rgba(0,229,160,0.3); }
+.mjp-badge-1    { background: rgba(59,130,246,0.12); color: var(--accent2); border: 1px solid rgba(59,130,246,0.25); }
+.mjp-badge-0    { background: rgba(255,107,138,0.08); color: rgba(255,107,138,0.6); border: 1px solid rgba(255,107,138,0.15); font-size: 11px; }
+.mjp-badge-null { background: rgba(255,255,255,0.04); color: var(--text-dimmer); border: 1px solid rgba(255,255,255,0.08); font-size: 11px; }

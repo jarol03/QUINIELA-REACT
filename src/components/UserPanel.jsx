@@ -75,9 +75,12 @@ export default function UserPanel({ user, onLogout }) {
   const [toast, setToast]                   = useState({ msg: "", type: "success" });
 
   // Puntos y ranking
-  const [misJornadas, setMisJornadas]       = useState([]); // jornadas con resultados
-  const [ranking, setRanking]               = useState([]);
-  const [loadingRanking, setLoadingRanking] = useState(false);
+  const [misJornadas, setMisJornadas]           = useState([]);
+  const [ranking, setRanking]                   = useState([]);
+  const [loadingRanking, setLoadingRanking]     = useState(false);
+  const [allPartidos, setAllPartidos]           = useState([]);
+  const [allPronsMios, setAllPronsMios]         = useState([]);
+  const [jornadaExpandida, setJornadaExpandida] = useState(null);
 
   const debugLog = useRef([]);
 
@@ -135,6 +138,9 @@ export default function UserPanel({ user, onLogout }) {
       (allPts || []).some(p => p.jornada_id === j.id && p.goles_local_real != null)
     );
     setMisJornadas(jornadasConRes);
+    setAllPartidos(allPts || []);
+    // Solo mis pronósticos
+    setAllPronsMios((allProns || []).filter(pr => pr.usuario_id === user.id));
 
     const rankData = (usrs || []).map(u => {
       let totalPts = 0;
@@ -379,7 +385,7 @@ export default function UserPanel({ user, onLogout }) {
           <div className="user-tab-content">
             <div className="user-section-header">
               <h2 className="user-section-title">Mis Puntos</h2>
-              <p className="user-section-sub">Tu desempeño por jornada</p>
+              <p className="user-section-sub">Tu desempeño por jornada y partido</p>
             </div>
 
             {loadingRanking ? (
@@ -401,21 +407,80 @@ export default function UserPanel({ user, onLogout }) {
                   </div>
                 </div>
 
-                {/* Puntos por jornada */}
+                {/* Jornadas con accordion de partidos */}
                 <div className="mis-jornadas-pts">
                   {misJornadas.map(j => {
-                    const jPts = miPos?.porJornada?.[j.id] ?? 0;
-                    const maxPts = Math.max(...ranking.map(u => u.porJornada?.[j.id] ?? 0), 1);
-                    const pct = Math.round((jPts / maxPts) * 100);
+                    const jPts      = miPos?.porJornada?.[j.id] ?? 0;
+                    const maxPts    = Math.max(...ranking.map(u => u.porJornada?.[j.id] ?? 0), 1);
+                    const pct       = Math.round((jPts / maxPts) * 100);
+                    const expanded  = jornadaExpandida === j.id;
+                    const ptsDej    = allPartidos.filter(p => p.jornada_id === j.id && p.goles_local_real != null).sort((a,b) => a.orden - b.orden);
+
                     return (
-                      <div key={j.id} className="mjp-row">
-                        <span className="mjp-nombre">{j.nombre}</span>
-                        <div className="mjp-bar-wrap">
-                          <div className="mjp-bar-track">
-                            <div className="mjp-bar-fill" style={{ width: `${pct}%` }} />
+                      <div key={j.id} className="mjp-card">
+                        {/* Fila resumen — click para expandir */}
+                        <div className="mjp-row" onClick={() => setJornadaExpandida(expanded ? null : j.id)}>
+                          <div className="mjp-row-left">
+                            <span className="mjp-nombre">{j.nombre}</span>
+                            <div className="mjp-bar-wrap">
+                              <div className="mjp-bar-track">
+                                <div className="mjp-bar-fill" style={{ width: `${pct}%` }} />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mjp-row-right">
+                            <span className="mjp-pts">{jPts}</span>
+                            <span className="mjp-chevron">{expanded ? "▲" : "▼"}</span>
                           </div>
                         </div>
-                        <span className="mjp-pts">{jPts}</span>
+
+                        {/* Desglose por partido */}
+                        {expanded && (
+                          <div className="mjp-partidos">
+                            {ptsDej.length === 0 && (
+                              <p className="dim-text" style={{padding:"8px 0"}}>Sin partidos con resultado.</p>
+                            )}
+                            {ptsDej.map((p, i) => {
+                              const pron = allPronsMios.find(pr => pr.partido_id === p.id);
+                              const pts  = calcPuntos(pron, p);
+                              const tienePron = pron?.goles_local != null;
+
+                              return (
+                                <div key={p.id} className={`mjp-partido-row ${pts === 3 ? "mjp-exacto" : pts === 1 ? "mjp-resultado" : pts === 0 ? "mjp-nada" : "mjp-sin-pron"}`}>
+                                  <span className="mjp-p-num">{i + 1}</span>
+
+                                  <div className="mjp-p-info">
+                                    <span className="mjp-p-teams">
+                                      {p.equipo_local} <span className="mjp-p-vs">vs</span> {p.equipo_visitante}
+                                    </span>
+                                    <div className="mjp-p-scores">
+                                      {/* Resultado real */}
+                                      <span className="mjp-p-real">
+                                        Real: <strong>{p.goles_local_real} – {p.goles_visitante_real}</strong>
+                                      </span>
+                                      {/* Mi pronóstico */}
+                                      {tienePron ? (
+                                        <span className="mjp-p-pron">
+                                          Yo: <strong>{pron.goles_local} – {pron.goles_visitante}</strong>
+                                        </span>
+                                      ) : (
+                                        <span className="mjp-p-sin">Sin pronóstico</span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Badge de puntos */}
+                                  <div className="mjp-p-badge">
+                                    {pts === 3 && <span className="mjp-badge mjp-badge-3">+3 🎯</span>}
+                                    {pts === 1 && <span className="mjp-badge mjp-badge-1">+1 ✓</span>}
+                                    {pts === 0 && <span className="mjp-badge mjp-badge-0">0</span>}
+                                    {pts === null && <span className="mjp-badge mjp-badge-null">—</span>}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
