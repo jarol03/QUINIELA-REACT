@@ -358,8 +358,7 @@ function UsuariosTab() {
     // Verificar si el nuevo username ya existe (en otro usuario)
     const usuarioActual = usuarios.find(u => u.id === id);
     if (nuevoUsername !== usuarioActual.username) {
-      const { data: existe } = await supabase
-        .from("usuarios").select("id").eq("username", nuevoUsername).single();
+      const { data: existe } = await supabase.from("usuarios").select("id").eq("username", nuevoUsername).maybeSingle();
       if (existe) {
         showToast("Ese usuario ya existe, elige otro.");
         setSavingEdit(false);
