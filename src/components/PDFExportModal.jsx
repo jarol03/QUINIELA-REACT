@@ -137,7 +137,7 @@ export default function PDFExportModal({ open, onClose, title, subtitle, type, d
           doc.text("PARTICIPANTE", cx, contentY);
           doc.text("MARCADOR", rightEdge - currentOffset, contentY, { align: "center" });
           doc.text("R", rightEdge - 1, contentY, { align: "right" });
-          if (showHora) doc.text("HORA", cx + colW * 0.88, contentY, { align: "center" });
+          // if (showHora) doc.text("HORA", cx + colW * 0.88, contentY, { align: "center" });
         }
 
         doc.setDrawColor(40, 55, 85);
@@ -232,12 +232,12 @@ export default function PDFExportModal({ open, onClose, title, subtitle, type, d
               doc.text(row.gep, rightEdge - 1, textY, { align: "right" });
             }
 
-            if (showHora && row.hora) {
-              doc.setFont("helvetica", "normal");
-              doc.setFontSize(fs.row - 1.5);
-              doc.setTextColor(90, 110, 150);
-              doc.text(row.hora, cx + colW * 0.88, textY, { align: "center" });
-            }
+            // if (showHora && row.hora) {
+            //   doc.setFont("helvetica", "normal");
+            //   doc.setFontSize(fs.row - 1.5);
+            //   doc.setTextColor(90, 110, 150);
+            //   doc.text(row.hora, cx + colW * 0.88, textY, { align: "center" });
+            // }
           }
         });
       });
