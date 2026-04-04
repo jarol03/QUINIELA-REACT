@@ -115,11 +115,13 @@ export default function PDFExportModal({ open, onClose, title, subtitle, type, d
         const cx = PAD + ci * (colW + 3);
         const rightEdge = cx + colW;
 
+        // Línea divisoria entre columnas
         if (ci > 0) {
           doc.setDrawColor(30, 42, 72);
           doc.line(cx - 1.5, contentY - 4, cx - 1.5, contentY + maxRows * rowH);
         }
 
+        // --- ENCABEZADOS DE COLUMNA (Se dibujan una vez por columna) ---
         doc.setFontSize(7);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(70, 90, 130);
@@ -137,17 +139,21 @@ export default function PDFExportModal({ open, onClose, title, subtitle, type, d
           doc.text("PARTICIPANTE", cx, contentY);
           doc.text("MARCADOR", rightEdge - currentOffset, contentY, { align: "center" });
           doc.text("R", rightEdge - 1, contentY, { align: "right" });
-          // if (showHora) doc.text("HORA", cx + colW * 0.88, contentY, { align: "center" });
         }
 
         doc.setDrawColor(40, 55, 85);
         doc.line(cx, contentY + 1, cx + colW, contentY + 1);
 
+        // --- FILAS DE DATOS ---
         colData.forEach((row, ri) => {
+          // CALCULAMOS EL ÍNDICE GLOBAL: (Columna actual * Items por columna) + Fila actual
+          const globalIndex = (ci * itemsPerCol) + ri;
+          
           const rowTop = contentY + 2 + ri * rowH;
           const centerY = rowTop + rowH / 2;
           const textY = centerY + (fs.row * 0.15);
 
+          // Fondo cebra
           if (ri % 2 === 0) {
             doc.setFillColor(20, 25, 42);
             doc.rect(cx, rowTop, colW, rowH, "F");
@@ -158,21 +164,26 @@ export default function PDFExportModal({ open, onClose, title, subtitle, type, d
           const subNameY = textY + 2.2;
 
           if (type === "puntos") {
-            const medal = ri === 0 ? "1" : ri === 1 ? "2" : ri === 2 ? "3" : `${row.pos || ri + 1}`;
+            // El número de ranking ahora es global
+            const medal = `${row.pos || globalIndex + 1}`;
+            
             doc.setFontSize(fs.row - 1);
             doc.setFont("helvetica", "bold");
+            
+            // Colores Oro, Plata y Bronce solo para el top 3 GLOBAL
             doc.setTextColor(
-              ri === 0 ? 251 : ri === 1 ? 192 : ri === 2 ? 180 : 90,
-              ri === 0 ? 191 : ri === 1 ? 192 : ri === 2 ? 100 : 105,
-              ri === 0 ? 36  : ri === 1 ? 192 : ri === 2 ? 60  : 140
+              globalIndex === 0 ? 251 : globalIndex === 1 ? 192 : globalIndex === 2 ? 180 : 90,
+              globalIndex === 0 ? 191 : globalIndex === 1 ? 192 : globalIndex === 2 ? 100 : 105,
+              globalIndex === 0 ? 36  : globalIndex === 1 ? 192 : globalIndex === 2 ? 60  : 140
             );
+            
             doc.text(medal, cx + 2, textY, { align: "center" });
 
+            // Datos del Participante
             doc.setFont("helvetica", "bold");
             doc.setTextColor(220, 230, 248);
             doc.setFontSize(fs.row);
             const nm = row.nombre || row.username || "";
-            // En puntos mantenemos el truncado fijo de colW * 0.45 como tenías
             doc.text(truncateText(doc, nm, colW * 0.45), cx + 6, nameY);
 
             if (hasSubName) {
@@ -182,6 +193,7 @@ export default function PDFExportModal({ open, onClose, title, subtitle, type, d
               doc.text(`@${row.username}`, cx + 6, subNameY);
             }
 
+            // Puntajes
             doc.setFontSize(fs.name);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(0, 210, 140);
@@ -198,7 +210,7 @@ export default function PDFExportModal({ open, onClose, title, subtitle, type, d
             }
 
           } else {
-            // MODO PREVIAS: Afectado por desplazamientos dinámicos
+            // MODO PREVIAS
             const nm = row.nombre || row.username || "";
             doc.setFontSize(fs.row);
             doc.setFont("helvetica", "bold");
@@ -231,13 +243,6 @@ export default function PDFExportModal({ open, onClose, title, subtitle, type, d
               doc.setTextColor(...(gepC[row.gep] || [150, 150, 150]));
               doc.text(row.gep, rightEdge - 1, textY, { align: "right" });
             }
-
-            // if (showHora && row.hora) {
-            //   doc.setFont("helvetica", "normal");
-            //   doc.setFontSize(fs.row - 1.5);
-            //   doc.setTextColor(90, 110, 150);
-            //   doc.text(row.hora, cx + colW * 0.88, textY, { align: "center" });
-            // }
           }
         });
       });
