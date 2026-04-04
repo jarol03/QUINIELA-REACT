@@ -5,83 +5,77 @@ import "../styles/admin.css";
 import DateTimePicker, { formatDisplay } from "./DateTimePicker";
 import PuntosTab from "./PuntosTab";
 import PreviasTab from "./PreviasTab";
+import AdminFinalTab from "./AdminFinalTab";
 import { useEffect } from "react";
 
 const TABS = [
-  { id: "jornadas", label: "🗓 Jornadas",          desc: "Gestiona jornadas y partidos" },
-  { id: "usuarios", label: "👥 Participantes",      desc: "Administra los usuarios" },
-  { id: "puntos",   label: "🏆 Tabla de Puntos",    desc: "Posiciones y puntajes" },
-  { id: "previas",  label: "📊 Previas",             desc: "Pronósticos por partido" },
-  { id: "copiar",   label: "📋 Copiar Resultados",   desc: "Exporta pronósticos a Excel" },
+  { id: "jornadas", icon: "🗓",  label: "Jornadas" },
+  { id: "usuarios", icon: "👥",  label: "Jugadores" },
+  { id: "puntos",   icon: "🏆",  label: "Puntos" },
+  { id: "previas",  icon: "📊",  label: "Previas" },
+  { id: "final",    icon: "🥇",  label: "La Final" },
+  { id: "copiar",   icon: "📋",  label: "Copiar" },
 ];
 
-export default function AdminPanel({ user, onLogout }) {
-  const [tab, setTab]           = useState("jornadas");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const current = TABS.find(t => t.id === tab);
+const TAB_DESC = {
+  jornadas: "Gestiona jornadas y partidos",
+  usuarios: "Administra los participantes",
+  puntos:   "Tabla de posiciones",
+  previas:  "Pronósticos por partido",
+  final:    "Predicción del partido final",
+  copiar:   "Exporta pronósticos a Excel",
+};
 
-  const handleTabChange = (id) => { setTab(id); setSidebarOpen(false); };
+export default function AdminPanel({ user, onLogout }) {
+  const [tab, setTab] = useState("jornadas");
 
   return (
-    <div className="panel-bg admin-layout">
-      {/* ── OVERLAY MÓVIL ── */}
-      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
-
-      {/* ── SIDEBAR ── */}
-      <aside className={`admin-sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
-        <div className="sidebar-brand">
-          <span className="panel-logo">⚽ Quiniela</span>
-          <span className="sidebar-year">2026</span>
-          <button className="sidebar-close-btn" onClick={() => setSidebarOpen(false)}>✕</button>
-        </div>
-
-        <nav className="sidebar-nav">
-          {TABS.map(t => (
-            <button
-              key={t.id}
-              className={`sidebar-item ${tab === t.id ? "active" : ""}`}
-              onClick={() => handleTabChange(t.id)}
-            >
-              <span className="sidebar-item-label">{t.label}</span>
-              <span className="sidebar-item-desc">{t.desc}</span>
-            </button>
-          ))}
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="sidebar-user">
-            <span className="admin-badge-sm">ADMIN</span>
-            <span className="sidebar-username">{user.username}</span>
+    <div className="admin-app">
+      {/* ── HEADER ── */}
+      <header className="admin-app-header">
+        <div className="admin-app-header-left">
+          <span className="admin-app-logo">⚽</span>
+          <div>
+            <span className="admin-app-title">Quiniela 2026</span>
+            <span className="admin-app-badge">ADMIN</span>
           </div>
-          <button className="panel-logout" onClick={onLogout}>Salir</button>
         </div>
-      </aside>
+        <button className="panel-logout" onClick={onLogout}>Salir</button>
+      </header>
 
-      {/* ── MAIN ── */}
-      <main className="admin-main">
-        {/* Header móvil */}
-        <header className="admin-mobile-header">
-          <button className="hamburger-btn" onClick={() => setSidebarOpen(true)}>☰</button>
-          <span className="panel-logo">⚽ Quiniela 2026</span>
-          <button className="panel-logout" onClick={onLogout}>Salir</button>
-        </header>
+      {/* ── TAB TITLE ── */}
+      <div className="admin-tab-title-bar">
+        <h1 className="admin-tab-title">{TABS.find(t => t.id === tab)?.icon} {TABS.find(t => t.id === tab)?.label}</h1>
+        <p className="admin-tab-desc">{TAB_DESC[tab]}</p>
+      </div>
 
-        <div className="admin-content">
-          <div className="admin-page-header">
-            <h1 className="admin-page-title">{current?.label}</h1>
-            <p className="admin-page-desc">{current?.desc}</p>
-          </div>
+      {/* ── CONTENT ── */}
+      <div className="admin-app-content">
+        {tab === "jornadas" && <JornadasTab />}
+        {tab === "usuarios" && <UsuariosTab />}
+        {tab === "puntos"   && <PuntosTab />}
+        {tab === "previas"  && <PreviasTab />}
+        {tab === "final"    && <AdminFinalTab />}
+        {tab === "copiar"   && <CopiarTab />}
+      </div>
 
-          {tab === "jornadas" && <JornadasTab />}
-          {tab === "usuarios" && <UsuariosTab />}
-          {tab === "puntos"   && <PuntosTab />}
-          {tab === "previas"  && <PreviasTab />}
-          {tab === "copiar"   && <CopiarTab />}
-        </div>
-      </main>
+      {/* ── BOTTOM NAV ── */}
+      <nav className="admin-bottom-nav">
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            className={`admin-bn-item ${tab === t.id ? "active" : ""}`}
+            onClick={() => setTab(t.id)}
+          >
+            <span className="admin-bn-icon">{t.icon}</span>
+            <span className="admin-bn-label">{t.label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }
+
 
 /* ═══════════════════════════════════════
    TAB: JORNADAS
@@ -358,7 +352,8 @@ function UsuariosTab() {
     // Verificar si el nuevo username ya existe (en otro usuario)
     const usuarioActual = usuarios.find(u => u.id === id);
     if (nuevoUsername !== usuarioActual.username) {
-      const { data: existe } = await supabase.from("usuarios").select("id").eq("username", nuevoUsername).maybeSingle();
+      const { data: existe } = await supabase
+        .from("usuarios").select("id").eq("username", nuevoUsername).single();
       if (existe) {
         showToast("Ese usuario ya existe, elige otro.");
         setSavingEdit(false);

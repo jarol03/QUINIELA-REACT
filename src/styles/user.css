@@ -582,3 +582,106 @@
 .mjp-badge-1    { background: rgba(59,130,246,0.12); color: var(--accent2); border: 1px solid rgba(59,130,246,0.25); }
 .mjp-badge-0    { background: rgba(255,107,138,0.08); color: rgba(255,107,138,0.6); border: 1px solid rgba(255,107,138,0.15); font-size: 11px; }
 .mjp-badge-null { background: rgba(255,255,255,0.04); color: var(--text-dimmer); border: 1px solid rgba(255,255,255,0.08); font-size: 11px; }
+
+/* ═══════════════════════════════════════
+   FINAL TAB — USUARIO
+═══════════════════════════════════════ */
+.final-fecha-banner {
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px; font-weight: 600;
+  margin-bottom: 16px;
+}
+.final-fecha-banner.open   { background: rgba(0,229,160,0.08); color: var(--accent); border: 1px solid rgba(0,229,160,0.22); }
+.final-fecha-banner.closed { background: rgba(255,107,138,0.08); color: var(--danger); border: 1px solid rgba(255,107,138,0.2); }
+
+/* Resultado real */
+.final-resultado-real {
+  border-radius: 18px; padding: 20px; margin-bottom: 16px; text-align: center;
+}
+.final-acerte    { background: rgba(0,229,160,0.08); border: 1px solid rgba(0,229,160,0.3); }
+.final-no-acerte { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); }
+
+.frr-title { font-size: 14px; font-weight: 700; color: var(--text-dim); margin-bottom: 12px; }
+.frr-score {
+  display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+}
+.frr-team    { font-size: 16px; font-weight: 700; color: var(--text); }
+.frr-marcador {
+  font-family: 'Clash Display','Outfit',sans-serif;
+  font-size: 28px; font-weight: 700; color: var(--accent); letter-spacing: -1px;
+}
+.frr-badge { margin-top: 12px; font-size: 15px; font-weight: 700; color: var(--accent); }
+
+/* Mi predicción guardada */
+.final-mi-pred {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px; padding: 16px; margin-bottom: 16px; text-align: center;
+}
+.fmp-label { font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dimmer); margin-bottom: 10px; }
+.fmp-score { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.fmp-team    { font-size: 15px; font-weight: 700; color: var(--text); }
+.fmp-marcador { font-family: 'Clash Display','Outfit',sans-serif; font-size: 26px; font-weight: 700; color: var(--accent2); letter-spacing: -1px; }
+.fmp-edit-hint { font-size: 11px; color: var(--text-dimmer); }
+
+/* Formulario */
+.final-form {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 18px; padding: 18px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.final-form-title { font-size: 14px; font-weight: 700; color: var(--text-dim); }
+
+.final-field-group { display: flex; flex-direction: column; gap: 5px; }
+.final-field-label { font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dimmer); }
+
+.final-select {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px; color: var(--text);
+  font-family: 'Outfit',sans-serif; font-size: 15px; font-weight: 500;
+  padding: 12px 14px; outline: none; width: 100%;
+  -webkit-appearance: none; appearance: none;
+  transition: border-color 0.2s;
+}
+.final-select:focus { border-color: rgba(0,229,160,0.4); }
+.final-select option { background: #1a1c2e; color: #fff; }
+
+.final-score-row {
+  display: flex; align-items: flex-end; justify-content: center; gap: 12px;
+}
+.final-score-input-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.final-score-team-label { font-size: 11px; font-weight: 600; color: var(--text-dimmer); text-align: center; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.final-score-input {
+  width: 68px; height: 68px;
+  background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.15);
+  border-radius: 16px; color: var(--text);
+  font-family: 'Clash Display','Outfit',sans-serif;
+  font-size: 28px; font-weight: 700; text-align: center;
+  outline: none; -moz-appearance: textfield; -webkit-appearance: none;
+  transition: border-color 0.2s;
+}
+.final-score-input::-webkit-outer-spin-button,
+.final-score-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.final-score-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,229,160,0.12); }
+.final-score-vs { font-size: 24px; color: var(--text-dimmer); font-weight: 700; padding-bottom: 18px; }
+
+.final-preview {
+  background: rgba(0,229,160,0.06); border: 1px solid rgba(0,229,160,0.18);
+  border-radius: 12px; padding: 12px 14px;
+  font-size: 13px; color: var(--text-dim);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.fp-label { font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); }
+.fp-text  { color: var(--text); font-weight: 500; }
+.fp-text strong { color: var(--accent); }
+
+.final-save-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; border-radius: 14px; color: #0a1628; cursor: pointer;
+  font-family: 'Outfit',sans-serif; font-size: 15px; font-weight: 700;
+  padding: 14px 20px; transition: opacity 0.2s, transform 0.15s;
+  box-shadow: 0 6px 20px rgba(0,229,160,0.22);
+  -webkit-tap-highlight-color: transparent;
+}
+.final-save-btn:active { transform: scale(0.98); opacity: 0.9; }
+.final-save-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }

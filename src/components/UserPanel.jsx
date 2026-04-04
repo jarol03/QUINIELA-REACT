@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, memo } from "react";
 import { supabase } from "../supabaseClient";
 import "../styles/panel.css";
 import "../styles/user.css";
+import FinalTab from "./FinalTab";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function isPartidoClosed(partido) {
@@ -270,7 +271,7 @@ export default function UserPanel({ user, onLogout }) {
                   <div className="empty-state">
                     <span className="empty-icon">🏟️</span>
                     <p>Sin jornadas disponibles</p>
-                    <span>Luis abrirá las jornadas pronto.</span>
+                    <span>El admin abrirá las jornadas pronto.</span>
                   </div>
                 )}
 
@@ -394,7 +395,7 @@ export default function UserPanel({ user, onLogout }) {
               <div className="empty-state">
                 <span className="empty-icon">📊</span>
                 <p>Aún sin resultados</p>
-                <span>Cuando Luis ingrese resultados verás tus puntos aquí.</span>
+                <span>Cuando el admin ingrese resultados verás tus puntos aquí.</span>
               </div>
             ) : (
               <>
@@ -513,15 +514,15 @@ export default function UserPanel({ user, onLogout }) {
                   return (
                     <div key={u.id} className={`ranking-row ${esMio ? "ranking-row-me" : ""} ${u.pos <= 3 && u.pts > 0 ? `ranking-row-top${u.pos}` : ""}`}>
                       <div className="rr-pos">{medalEmoji(u.pos, u.pts)}</div>
-                      <div className="rr-avatar">{(u.nombre).charAt(0).toUpperCase()}</div>
+                      <div className="rr-avatar">{(u.nombre || u.username).charAt(0).toUpperCase()}</div>
                       <div className="rr-info">
                         <span className="rr-nombre">
                           {u.nombre || u.username}
                           {esMio && <span className="rr-yo"> (tú)</span>}
                         </span>
-                        {/* {u.nombre && u.nombre !== u.username && (
+                        {u.nombre && u.nombre !== u.username && (
                           <span className="rr-username">@{u.username}</span>
-                        )} */}
+                        )}
                       </div>
                       <div className="rr-pts">
                         <span className="rr-pts-num">{u.pts}</span>
@@ -534,6 +535,9 @@ export default function UserPanel({ user, onLogout }) {
             )}
           </div>
         )}
+        {/* ═══════════ TAB: FINAL ═══════════ */}
+        {tab === "final" && <FinalTab user={user} />}
+
       </div>
 
       {/* ── BOTTOM NAV ── */}
@@ -546,8 +550,12 @@ export default function UserPanel({ user, onLogout }) {
           <span className="ubn-icon">📊</span>
           <span className="ubn-label">Mis Puntos</span>
         </button>
-        <button className={`ubn-item ${tab === "ranking" ? "active" : ""}`} onClick={() => setTab("ranking")}>
+        <button className={`ubn-item ${tab === "final" ? "active" : ""}`} onClick={() => setTab("final")}>
           <span className="ubn-icon">🏆</span>
+          <span className="ubn-label">La Final</span>
+        </button>
+        <button className={`ubn-item ${tab === "ranking" ? "active" : ""}`} onClick={() => setTab("ranking")}>
+          <span className="ubn-icon">🥇</span>
           <span className="ubn-label">Ranking</span>
         </button>
       </nav>
