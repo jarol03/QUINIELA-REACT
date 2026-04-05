@@ -1,4 +1,11 @@
 // ── Utilidades compartidas de racha ──────────────────────────────────────
+//
+// REGLAS DE SIMULTÁNEOS:
+// Partidos con el mismo fecha_limite se tratan como un bloque.
+//   · Si acierta AL MENOS UNO exacto del bloque → racha +1 (beneficio)
+//   · Si acierta TODOS exactos del bloque → racha +N (uno por partido)
+//   · Si no acierta ninguno del bloque → racha se rompe (reset a 0)
+//   · Si algún partido no tiene pronóstico → se ignora, no rompe
 
 export function calcPuntos(pron, partido) {
   if (!pron || pron.goles_local == null) return null;
@@ -31,37 +38,88 @@ export function ordenarPartidos(partidos) {
     });
 }
 
-// Detecta la PRIMERA racha de 3 exactos consecutivos.
-// Una vez encontrada para — no importa si hay otra racha después.
-export function detectarPrimeraRacha(partidosOrdenados, pronsMap) {
-  let racha = [];
-  for (const p of partidosOrdenados) {
+// Agrupa partidos por fecha_limite (mismo timestamp = simultáneos).
+// Partidos sin fecha_limite van cada uno en su propio grupo.
+function agruparPorFecha(partidos) {
+  const grupos = [];
+  const mapa   = {};
+  for (const p of partidos) {
+    const key = p.fecha_limite
+      ? new Date(p.fecha_limite).toISOString()  // normalizar a ISO exacto
+      : `individual_${p.id}`;
+    if (!mapa[key]) { mapa[key] = []; grupos.push(mapa[key]); }
+    mapa[key].push(p);
+  }
+  return grupos;
+}
+
+// Evalúa un bloque de partidos (simultáneos o individual).
+// Devuelve:
+//   número > 0  → cuántos exactos suman al contador de racha
+//   -1          → ningún exacto con resultado → rompe racha
+//    0          → todos sin resultado todavía → neutro, ignorar
+function evaluarBloque(bloque, pronsMap) {
+  let exactos        = 0;
+  let conResultado   = 0;
+  const partidosExactos = [];
+
+  for (const p of bloque) {
     const pts = calcPuntos(pronsMap[p.id], p);
-    if (pts === 3) {
-      racha.push(p);
-      if (racha.length >= 3) return racha.slice(0, 3);
+    if (pts === null) continue;   // sin resultado aún → ignorar este partido
+    conResultado++;
+    if (pts === 3) { exactos++; partidosExactos.push(p); }
+  }
+
+  if (conResultado === 0) return { suma: 0, partidos: [] };   // neutro
+  if (exactos === 0)      return { suma: -1, partidos: [] };  // rompe
+  return { suma: exactos, partidos: partidosExactos };        // suma N
+}
+
+// Detecta la PRIMERA racha de 3+ exactos consecutivos respetando simultáneos.
+// Una vez encontrada, para — no busca rachas posteriores.
+export function detectarPrimeraRacha(partidosOrdenados, pronsMap) {
+  const grupos = agruparPorFecha(partidosOrdenados);
+  let acumulado    = 0;
+  let rachaPartidos = [];
+
+  for (const grupo of grupos) {
+    const { suma, partidos } = evaluarBloque(grupo, pronsMap);
+
+    if (suma === -1) {
+      // Rompe racha
+      acumulado     = 0;
+      rachaPartidos = [];
+    } else if (suma === 0) {
+      // Neutro — no hace nada
     } else {
-      racha = [];
+      acumulado    += suma;
+      rachaPartidos = [...rachaPartidos, ...partidos];
+      if (acumulado >= 3) {
+        return rachaPartidos.slice(0, 3);
+      }
     }
   }
   return null;
 }
 
-// Racha actual desde el último partido hacia atrás.
-// Si el usuario ya ganó el premio, su racha actual es 0
-// (ya no compite para volver a ganarlo).
+// Racha ACTUAL desde el último bloque hacia atrás.
+// Si el usuario ya ganó el premio → 0 (ya no compite).
 export function calcRachaActual(partidosOrdenados, pronsMap, yaGano) {
   if (yaGano) return 0;
+
+  const grupos = agruparPorFecha(partidosOrdenados);
   let racha = 0;
-  for (let i = partidosOrdenados.length - 1; i >= 0; i--) {
-    const pts = calcPuntos(pronsMap[partidosOrdenados[i].id], partidosOrdenados[i]);
-    if (pts === 3) racha++;
-    else break;
+
+  for (let i = grupos.length - 1; i >= 0; i--) {
+    const { suma } = evaluarBloque(grupos[i], pronsMap);
+    if (suma === -1) break;    // rompe — detenemos
+    if (suma === 0)  continue; // neutro — seguir mirando hacia atrás
+    racha += suma;             // sumar exactos del bloque
   }
   return racha;
 }
 
-// Calcula el estado completo de racha para todos los usuarios.
+// Calcula el estado completo para todos los usuarios.
 export function calcularRachas(usrs, allPts, allProns) {
   const conRes = ordenarPartidos(allPts || []);
 
@@ -78,7 +136,6 @@ export function calcularRachas(usrs, allPts, allProns) {
     return { u, primeraRacha, yaGano, rachaActual };
   });
 
-  // Ordenar: ganadores primero, luego por racha actual desc, luego alphabético
   data.sort((a, b) => {
     if (a.yaGano && !b.yaGano) return -1;
     if (!a.yaGano && b.yaGano) return 1;
