@@ -520,9 +520,9 @@ export default function UserPanel({ user, onLogout }) {
                           {u.nombre || u.username}
                           {esMio && <span className="rr-yo"> (tú)</span>}
                         </span>
-                        {u.nombre && u.nombre !== u.username && (
+                        {/* {u.nombre && u.nombre !== u.username && (
                           <span className="rr-username">@{u.username}</span>
-                        )}
+                        )} */}
                       </div>
                       <div className="rr-pts">
                         <span className="rr-pts-num">{u.pts}</span>

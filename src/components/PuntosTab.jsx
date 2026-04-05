@@ -362,8 +362,8 @@ export default function PuntosTab() {
                             <td className="tp-user-cell">
                               <div className="tp-avatar">{(u.nombre || u.username).charAt(0).toUpperCase()}</div>
                               <div className="tp-user-names">
-                                <span>{u.nombre || u.username}</span>
-                                {u.nombre && u.nombre !== u.username && <span className="tp-username-sub">@{u.username}</span>}
+                                <span>{u.nombre}</span>
+                                {/* {u.nombre && u.nombre !== u.username && <span className="tp-username-sub">@{u.username}</span>} */}
                               </div>
                             </td>
                             <td className="tp-pts-cell">{u.pts}</td>
