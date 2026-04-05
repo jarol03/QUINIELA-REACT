@@ -16,7 +16,7 @@ const TABS = [
   { id: "previas",  icon: "📊",  label: "Previas" },
   { id: "final",    icon: "🥇",  label: "La Final" },
   { id: "racha",    icon: "🔥",  label: "Racha" },
-  { id: "copiar",   icon: "📋",  label: "Copiar" },
+  // { id: "copiar",   icon: "📋",  label: "Copiar" },
 ];
 
 const TAB_DESC = {

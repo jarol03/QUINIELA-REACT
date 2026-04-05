@@ -738,3 +738,69 @@
 .fst-razon  { font-size: 11px; color: var(--danger); opacity: 0.8; }
 
 .fst-estado { font-size: 18px; flex-shrink: 0; }
+
+/* ═══════════════════════════════════════
+   RACHA VIEW — USUARIO
+═══════════════════════════════════════ */
+
+/* Hero card personal */
+.racha-hero {
+  display: flex; align-items: center; gap: 16px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 20px; padding: 20px; margin-bottom: 16px;
+  position: relative; overflow: hidden;
+}
+.racha-hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.03), transparent 60%);
+  pointer-events: none;
+}
+.racha-hero-ganador {
+  border-color: rgba(251,191,36,0.35) !important;
+  background: rgba(251,191,36,0.06) !important;
+}
+.racha-hero-cerca {
+  border-color: rgba(255,107,138,0.25) !important;
+  background: rgba(255,107,138,0.04) !important;
+}
+
+.rh-icon { font-size: 44px; flex-shrink: 0; }
+
+.rh-dots-big { display: flex; gap: 10px; flex-shrink: 0; }
+.rh-dot {
+  width: 18px; height: 18px; border-radius: 50%;
+  transition: all 0.3s;
+}
+.rh-dot-off { background: rgba(255,255,255,0.1); }
+.rh-dot-on  { background: var(--accent); box-shadow: 0 0 10px rgba(0,229,160,0.5); }
+
+.rh-info { display: flex; flex-direction: column; gap: 4px; }
+.rh-titulo { font-size: 16px; font-weight: 700; color: var(--text); }
+.rh-sub    { font-size: 13px; color: var(--text-dim); }
+.racha-hero-ganador .rh-titulo { color: var(--gold); }
+.racha-hero-ganador .rh-sub    { color: rgba(251,191,36,0.7); }
+
+/* Ganadores en vista usuario */
+.racha-ganadores-user {
+  background: rgba(251,191,36,0.07); border: 1px solid rgba(251,191,36,0.25);
+  border-radius: 16px; padding: 14px 16px; margin-bottom: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.rgu-label { font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); }
+.rgu-row   { display: flex; align-items: center; gap: 10px; }
+.rgu-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), #f59e0b);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: #0a1628; flex-shrink: 0;
+}
+.rgu-nombre { flex: 1; font-size: 14px; font-weight: 700; color: var(--text); }
+.rgu-badge  { font-size: 18px; }
+
+/* Fila compartida (admin y user) */
+.racha-row-mio {
+  background: rgba(0,229,160,0.05) !important;
+  outline: 1px solid rgba(0,229,160,0.2);
+  outline-offset: -1px;
+}
+.racha-yo { color: var(--accent); font-size: 12px; font-weight: 600; margin-left: 4px; }
