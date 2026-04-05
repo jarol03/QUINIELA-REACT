@@ -37,7 +37,7 @@ export default function AdminPanel({ user, onLogout }) {
           <span className="admin-app-logo">⚽</span>
           <div>
             <span className="admin-app-title">Quiniela 2026</span>
-            <span className="admin-app-badge">ADMIN</span>
+            <span className="admin-app-badge">Luis</span>
           </div>
         </div>
         <button className="panel-logout" onClick={onLogout}>Salir</button>
