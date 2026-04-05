@@ -10,28 +10,34 @@ function fmtFecha(iso) {
 }
 
 export default function FinalTab({ user }) {
-  const [config,    setConfig]    = useState(null);  // final_config row
-  const [equipos,   setEquipos]   = useState([]);    // equipos no eliminados
-  const [miPred,    setMiPred]    = useState(null);  // predicción guardada
-  const [localSel,  setLocalSel]  = useState("");
-  const [visitSel,  setVisitSel]  = useState("");
-  const [golesL,    setGolesL]    = useState("");
-  const [golesV,    setGolesV]    = useState("");
-  const [saving,    setSaving]    = useState(false);
-  const [loading,   setLoading]   = useState(true);
-  const [toast,     setToast]     = useState({ msg: "", type: "success" });
+  const [config,     setConfig]     = useState(null);
+  const [equipos,    setEquipos]    = useState([]);   // todos los equipos con estado eliminado
+  const [miPred,     setMiPred]     = useState(null);
+  const [todasPreds, setTodasPreds] = useState([]);   // todas las predicciones
+  const [usuarios,   setUsuarios]   = useState([]);
+  const [localSel,   setLocalSel]   = useState("");
+  const [visitSel,   setVisitSel]   = useState("");
+  const [golesL,     setGolesL]     = useState("");
+  const [golesV,     setGolesV]     = useState("");
+  const [saving,     setSaving]     = useState(false);
+  const [loading,    setLoading]    = useState(true);
+  const [toast,      setToast]      = useState({ msg: "", type: "success" });
 
   useEffect(() => { load(); }, []);
 
   const load = async () => {
     setLoading(true);
-    const [{ data: cfgs }, { data: eqs }, { data: pred }] = await Promise.all([
+    const [{ data: cfgs }, { data: eqs }, { data: pred }, { data: preds }, { data: usrs }] = await Promise.all([
       supabase.from("final_config").select("*").limit(1),
-      supabase.from("equipos_mundial").select("*").eq("eliminado", false).order("nombre"),
-      supabase.from("predicciones_final").select("*").eq("usuario_id", user.id).single(),
+      supabase.from("equipos_mundial").select("*").order("nombre"),  // todos, con eliminado
+      supabase.from("predicciones_final").select("*").eq("usuario_id", user.id).maybeSingle(),
+      supabase.from("predicciones_final").select("*"),
+      supabase.from("usuarios").select("id, username, nombre").order("username"),
     ]);
     setConfig(cfgs?.[0] || null);
     setEquipos(eqs || []);
+    setTodasPreds(preds || []);
+    setUsuarios(usrs || []);
     if (pred) {
       setMiPred(pred);
       setLocalSel(pred.equipo_local);
@@ -86,16 +92,37 @@ export default function FinalTab({ user }) {
     setTimeout(() => setToast({ msg: "", type: "success" }), 3000);
   };
 
-  const equiposParaVisitante = equipos.filter(e => e.nombre !== localSel);
-  const equiposParaLocal     = equipos.filter(e => e.nombre !== visitSel);
+  // Equipos activos para los selectores
+  const equiposActivos = equipos.filter(e => !e.eliminado);
+  const eqEliminadosSet = new Set(equipos.filter(e => e.eliminado).map(e => e.nombre));
 
-  // Si el equipo seleccionado fue eliminado, lo incluimos igual para que se vea
-  const localOpts = localSel && !equipos.find(e => e.nombre === localSel)
-    ? [{ nombre: localSel, eliminado: true }, ...equiposParaLocal]
-    : equiposParaLocal;
-  const visitOpts = visitSel && !equipos.find(e => e.nombre === visitSel)
-    ? [{ nombre: visitSel, eliminado: true }, ...equiposParaVisitante]
-    : equiposParaVisitante;
+  const localOpts = equiposActivos.filter(e => e.nombre !== visitSel);
+  const visitOpts = equiposActivos.filter(e => e.nombre !== localSel);
+  // Si el equipo seleccionado fue eliminado, lo mostramos igual para no confundir
+  if (localSel && !equiposActivos.find(e => e.nombre === localSel))
+    localOpts.unshift({ nombre: localSel, eliminado: true });
+  if (visitSel && !equiposActivos.find(e => e.nombre === visitSel))
+    visitOpts.unshift({ nombre: visitSel, eliminado: true });
+
+  // Calcular estado de cada predicción
+  const predConEstado = todasPreds.map(p => {
+    const u = usuarios.find(u => u.id === p.usuario_id);
+    const localElim = eqEliminadosSet.has(p.equipo_local);
+    const visitElim = eqEliminadosSet.has(p.equipo_visitante);
+    const enJuego   = !localElim && !visitElim;
+    const esGanador = resultadoReal &&
+      p.equipo_local     === config.equipo_local_real &&
+      p.equipo_visitante === config.equipo_visitante_real &&
+      Number(p.goles_local)     === Number(config.goles_local_real) &&
+      Number(p.goles_visitante) === Number(config.goles_visitante_real);
+    return { ...p, u, localElim, visitElim, enJuego, esGanador };
+  }).sort((a, b) => {
+    if (a.esGanador && !b.esGanador) return -1;
+    if (!a.esGanador && b.esGanador) return 1;
+    if (a.enJuego && !b.enJuego) return -1;
+    if (!a.enJuego && b.enJuego) return 1;
+    return 0;
+  });
 
   return (
     <div className="user-tab-content">
@@ -148,6 +175,56 @@ export default function FinalTab({ user }) {
                 <span className="fmp-team">{miPred.equipo_visitante}</span>
               </div>
               {!isClosed && <span className="fmp-edit-hint">Puedes modificarla abajo hasta el cierre</span>}
+            </div>
+          )}
+
+          {/* Tabla de en juego — visible cuando ya cerró */}
+          {isClosed && predConEstado.length > 0 && (
+            <div className="final-standings">
+              <div className="fst-header">
+                <span className="fst-title">Tabla de participantes</span>
+                <div className="fst-counts">
+                  <span className="fst-count-vivo">
+                    ✅ {predConEstado.filter(p => p.enJuego).length} en juego
+                  </span>
+                  <span className="fst-count-elim">
+                    ❌ {predConEstado.filter(p => !p.enJuego).length} eliminados
+                  </span>
+                </div>
+              </div>
+
+              <div className="fst-list">
+                {predConEstado.map(p => {
+                  const esMio = p.usuario_id === user.id;
+                  return (
+                    <div key={p.usuario_id} className={`fst-row ${p.esGanador ? "fst-ganador" : p.enJuego ? "fst-vivo" : "fst-eliminado"} ${esMio ? "fst-mio" : ""}`}>
+                      <div className="fst-avatar">
+                        {(p.u?.nombre || p.u?.username || "?").charAt(0).toUpperCase()}
+                      </div>
+                      <div className="fst-info">
+                        <span className="fst-nombre">
+                          {p.u?.nombre || p.u?.username}
+                          {esMio && <span className="fst-yo"> (tú)</span>}
+                        </span>
+                        <span className="fst-pred">
+                          <span className={p.localElim ? "fst-team-elim" : ""}>{p.equipo_local}</span>
+                          {" "}<strong>{p.goles_local}–{p.goles_visitante}</strong>{" "}
+                          <span className={p.visitElim ? "fst-team-elim" : ""}>{p.equipo_visitante}</span>
+                        </span>
+                        {/* Razón de eliminación */}
+                        {!p.enJuego && (
+                          <span className="fst-razon">
+                            ❌ {[p.localElim && p.equipo_local, p.visitElim && p.equipo_visitante].filter(Boolean).join(" y ")} eliminado{p.localElim && p.visitElim ? "s" : ""}
+                          </span>
+                        )}
+                      </div>
+                      <div className="fst-estado">
+                        {p.esGanador ? "🏆" : p.enJuego ? "✅" : "❌"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
