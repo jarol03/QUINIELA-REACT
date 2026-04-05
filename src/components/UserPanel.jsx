@@ -3,6 +3,7 @@ import { supabase } from "../supabaseClient";
 import "../styles/panel.css";
 import "../styles/user.css";
 import FinalTab from "./FinalTab";
+import RachaView from "./RachaView";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function isPartidoClosed(partido) {
@@ -538,6 +539,9 @@ export default function UserPanel({ user, onLogout }) {
         {/* ═══════════ TAB: FINAL ═══════════ */}
         {tab === "final" && <FinalTab user={user} />}
 
+        {/* ═══════════ TAB: RACHA ═══════════ */}
+        {tab === "racha" && <RachaView user={user} />}
+
       </div>
 
       {/* ── BOTTOM NAV ── */}
@@ -553,6 +557,10 @@ export default function UserPanel({ user, onLogout }) {
         <button className={`ubn-item ${tab === "final" ? "active" : ""}`} onClick={() => setTab("final")}>
           <span className="ubn-icon">🏆</span>
           <span className="ubn-label">La Final</span>
+        </button>
+        <button className={`ubn-item ${tab === "racha" ? "active" : ""}`} onClick={() => setTab("racha")}>
+          <span className="ubn-icon">🔥</span>
+          <span className="ubn-label">Racha</span>
         </button>
         <button className={`ubn-item ${tab === "ranking" ? "active" : ""}`} onClick={() => setTab("ranking")}>
           <span className="ubn-icon">🥇</span>

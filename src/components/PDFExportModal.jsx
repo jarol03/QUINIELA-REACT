@@ -297,8 +297,8 @@ export default function PDFExportModal({ open, onClose, title, subtitle, type, d
               <label className="pdfm-label">Opciones</label>
               <div className="pdfm-checkboxes">
                 <label className="pdfm-check">
-                  <input type="checkbox" checked={showUser} onChange={e => setShowUser(e.target.checked)} />
-                  <span>Mostrar @usuario bajo el nombre</span>
+                  {/* <input type="checkbox" checked={showUser} onChange={e => setShowUser(e.target.checked)} />
+                  <span>Mostrar @usuario bajo el nombre</span> */}
                 </label>
                 {/* {type === "previas" && (
                   <label className="pdfm-check">

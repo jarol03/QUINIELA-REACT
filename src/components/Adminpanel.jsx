@@ -6,6 +6,7 @@ import DateTimePicker, { formatDisplay } from "./DateTimePicker";
 import PuntosTab from "./PuntosTab";
 import PreviasTab from "./PreviasTab";
 import AdminFinalTab from "./AdminFinalTab";
+import RachaTab from "./RachaTab";
 import { useEffect } from "react";
 
 const TABS = [
@@ -14,7 +15,8 @@ const TABS = [
   { id: "puntos",   icon: "🏆",  label: "Puntos" },
   { id: "previas",  icon: "📊",  label: "Previas" },
   { id: "final",    icon: "🥇",  label: "La Final" },
-  { id: "copiar",   icon: "📋",  label: "Copiar" },
+  { id: "racha",    icon: "🔥",  label: "Racha" },
+  // { id: "copiar",   icon: "📋",  label: "Copiar" },
 ];
 
 const TAB_DESC = {
@@ -23,6 +25,7 @@ const TAB_DESC = {
   puntos:   "Tabla de posiciones",
   previas:  "Pronósticos por partido",
   final:    "Predicción del partido final",
+  racha:    "Premio por 3 exactos seguidos",
   copiar:   "Exporta pronósticos a Excel",
 };
 
@@ -37,7 +40,7 @@ export default function AdminPanel({ user, onLogout }) {
           <span className="admin-app-logo">⚽</span>
           <div>
             <span className="admin-app-title">Quiniela 2026</span>
-            <span className="admin-app-badge">Luis</span>
+            <span className="admin-app-badge">Luis Espinal</span>
           </div>
         </div>
         <button className="panel-logout" onClick={onLogout}>Salir</button>
@@ -56,6 +59,7 @@ export default function AdminPanel({ user, onLogout }) {
         {tab === "puntos"   && <PuntosTab />}
         {tab === "previas"  && <PreviasTab />}
         {tab === "final"    && <AdminFinalTab />}
+        {tab === "racha"    && <RachaTab />}
         {tab === "copiar"   && <CopiarTab />}
       </div>
 
