@@ -2,10 +2,14 @@ import { useState, useEffect } from "react";
 import Login from "./components/Login";
 import AdminPanel from "./components/Adminpanel";
 import UserPanel from "./components/UserPanel";
-import { getSession, clearSession, verifyUserStillExists } from "./supabaseClient";
+import {
+  getSession,
+  clearSession,
+  verifyUserStillExists,
+} from "./supabaseClient";
 
 export default function App() {
-  const [user, setUser]       = useState(null);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,12 +49,25 @@ export default function App() {
 
   if (loading) {
     return (
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "center",
-        height: "100vh", background: "#0d0f1a", flexDirection: "column", gap: 16,
-      }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          background: "#0d0f1a",
+          flexDirection: "column",
+          gap: 16,
+        }}
+      >
         <div className="spinner" />
-        <p style={{ color: "rgba(240,244,255,0.3)", fontFamily: "sans-serif", fontSize: 14 }}>
+        <p
+          style={{
+            color: "rgba(240,244,255,0.3)",
+            fontFamily: "sans-serif",
+            fontSize: 14,
+          }}
+        >
           Verificando sesión...
         </p>
       </div>
@@ -61,3 +78,4 @@ export default function App() {
   if (user.is_admin) return <AdminPanel user={user} onLogout={handleLogout} />;
   return <UserPanel user={user} onLogout={handleLogout} />;
 }
+
