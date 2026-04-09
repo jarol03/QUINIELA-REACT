@@ -8,8 +8,12 @@
 //   · Si algún partido no tiene pronóstico → se ignora, no rompe
 
 export function calcPuntos(pron, partido) {
-  if (!pron || pron.goles_local == null) return null;
+  // Si el partido NO tiene resultado aún → null (ignorar en racha)
   if (partido.goles_local_real == null) return null;
+
+  // Si hay resultado pero NO hay pronóstico → 0 (rompe racha)
+  if (!pron || pron.goles_local == null) return 0;
+
   const gl = Number(pron.goles_local),  gv = Number(pron.goles_visitante);
   const rl = Number(partido.goles_local_real), rv = Number(partido.goles_visitante_real);
   if (gl === rl && gv === rv) return 3;

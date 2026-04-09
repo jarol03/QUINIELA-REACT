@@ -131,11 +131,13 @@ export default function UserPanel({ user, onLogout }) {
 
   const loadRanking = async () => {
     setLoadingRanking(true);
-    const [{ data: usrs }, { data: allPts }, { data: allProns }, { data: js }] = await Promise.all([
+    // FIX: Filtrar pronósticos en BD, no en memoria (respeta límite de 1000)
+    const [{ data: usrs }, { data: allPts }, { data: misPronsMiosData }, { data: js }, { data: allPronsForRanking }] = await Promise.all([
       supabase.from("usuarios").select("id, username, nombre").order("username"),
       supabase.from("partidos").select("*"),
-      supabase.from("pronosticos").select("*"),
+      supabase.from("pronosticos").select("*").eq("usuario_id", user.id), // Filtrar EN BD
       supabase.from("jornadas").select("*").order("created_at"),
+      supabase.from("pronosticos").select("*"), // Para ranking (todos los usuarios)
     ]);
 
     const jornadasConRes = (js || []).filter(j =>
@@ -143,8 +145,16 @@ export default function UserPanel({ user, onLogout }) {
     );
     setMisJornadas(jornadasConRes);
     setAllPartidos(allPts || []);
-    // Solo mis pronósticos
-    setAllPronsMios((allProns || []).filter(pr => pr.usuario_id === user.id));
+    // Usar los pronósticos filtrados en BD
+    setAllPronsMios(misPronsMiosData || []);
+
+    // DEBUG: Guardar en window para acceso desde consola
+    window.__ReactDebugInfo = {
+      usuario: user,
+      allPronsMios: misPronsMiosData,
+      allPartidos: allPts,
+      misJornadas: jornadasConRes,
+    };
 
     const rankData = (usrs || []).map(u => {
       let totalPts = 0;
@@ -153,7 +163,7 @@ export default function UserPanel({ user, onLogout }) {
         const ptsDej = (allPts || []).filter(p => p.jornada_id === j.id);
         let jPts = 0;
         ptsDej.forEach(p => {
-          const pron = (allProns || []).find(pr => pr.usuario_id === u.id && pr.partido_id === p.id);
+          const pron = (allPronsForRanking || []).find(pr => pr.usuario_id === u.id && pr.partido_id === p.id);
           const pts = calcPuntos(pron, p);
           if (pts === 3) { jPts += 3; totalPts += 3; }
           else if (pts === 1) { jPts += 1; totalPts += 1; }
@@ -199,15 +209,49 @@ export default function UserPanel({ user, onLogout }) {
         return v?.local !== undefined && v?.local !== "" && v?.visitante !== undefined && v?.visitante !== "";
       })
       .map(p => ({
-        usuario_id: user.id, jornada_id: selectedJornada.id, partido_id: p.id,
-        goles_local: pronosticos[p.id]?.local ?? null,
-        goles_visitante: pronosticos[p.id]?.visitante ?? null,
+        usuario_id: user.id, 
+        jornada_id: selectedJornada.id, 
+        partido_id: p.id,
+        goles_local: Number(pronosticos[p.id]?.local) || 0,
+        goles_visitante: Number(pronosticos[p.id]?.visitante) || 0,
       }));
 
-    if (!upserts.length) { showToast("No hay pronósticos abiertos.", "error"); setSaving(false); return; }
-    const { error } = await supabase.from("pronosticos").upsert(upserts, { onConflict: "usuario_id,partido_id" });
-    if (!error) { setSavedPronosticos({ ...pronosticos }); showToast("¡Guardado!", "success"); }
-    else showToast("Error al guardar.", "error");
+    if (!upserts.length) { 
+      showToast("No hay pronósticos abiertos.", "error"); 
+      setSaving(false); 
+      return; 
+    }
+
+    try {
+      // Primero intentar delete de conflictos potenciales
+      const { error: deleteError } = await supabase
+        .from("pronosticos")
+        .delete()
+        .eq("usuario_id", user.id)
+        .eq("jornada_id", selectedJornada.id)
+        .in("partido_id", upserts.map(u => u.partido_id));
+
+      if (deleteError) {
+        console.warn("⚠️ Warning al limpiar pronósticos:", deleteError);
+      }
+
+      // Ahora insertar sin conflictos
+      const { error } = await supabase
+        .from("pronosticos")
+        .insert(upserts);
+
+      if (!error) { 
+        setSavedPronosticos({ ...pronosticos }); 
+        showToast("¡Guardado!", "success"); 
+      } else {
+        console.error("❌ Error al guardar:", error);
+        showToast(`Error: ${error.message || "No se pudo guardar"}`, "error");
+      }
+    } catch (err) {
+      console.error("❌ Excepción al guardar:", err);
+      showToast("Error inesperado al guardar", "error");
+    }
+
     setSaving(false);
   };
 
