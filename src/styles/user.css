@@ -804,3 +804,166 @@
   outline-offset: -1px;
 }
 .racha-yo { color: var(--accent); font-size: 12px; font-weight: 600; margin-left: 4px; }
+
+/* ═══════════════════════════════════════
+   RANKING SUB-TABS
+═══════════════════════════════════════ */
+.rk-subtabs {
+  display: flex; gap: 6px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  padding-bottom: 0;
+}
+.rk-subtab {
+  background: transparent; border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dimmer); cursor: pointer;
+  font-family: 'Outfit',sans-serif; font-size: 14px; font-weight: 600;
+  padding: 8px 16px; transition: all 0.2s; margin-bottom: -1px;
+  -webkit-tap-highlight-color: transparent;
+}
+.rk-subtab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ═══════════════════════════════════════
+   RANKING POR JORNADA
+═══════════════════════════════════════ */
+.rj-jornadas-list {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 20px;
+}
+
+.rj-jornada-pill {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 100px; color: var(--text-dim);
+  cursor: pointer; font-family: 'Outfit',sans-serif;
+  font-size: 13px; font-weight: 600; padding: 8px 16px;
+  transition: all 0.2s; display: flex; align-items: center; gap: 5px;
+  -webkit-tap-highlight-color: transparent;
+  animation: fadeUp 0.3s cubic-bezier(0.16,1,0.3,1) both;
+}
+.rj-jornada-pill.active { background: rgba(0,229,160,0.10); border-color: rgba(0,229,160,0.35); color: var(--accent); }
+.rj-pill-done { font-size: 10px; color: var(--accent); }
+
+/* Leyenda */
+.rj-leyenda {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px; margin-bottom: 14px;
+}
+.rj-ley-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim); }
+.rj-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.rj-dot-top { background: var(--gold);   box-shadow: 0 0 6px rgba(251,191,36,0.5); }
+.rj-dot-con { background: var(--accent); box-shadow: 0 0 6px rgba(0,229,160,0.4); }
+.rj-dot-sin { background: var(--danger); opacity: 0.6; }
+
+/* Lista */
+.rj-lista { display: flex; flex-direction: column; gap: 6px; }
+
+.rj-row {
+  display: flex; align-items: center; gap: 10px;
+  border-radius: 16px; padding: 11px 14px;
+  border: 1px solid rgba(255,255,255,0.07);
+  transition: all 0.2s;
+  animation: fadeUp 0.3s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* Colores por posibilidades */
+.rj-row-top {
+  background: rgba(251,191,36,0.06);
+  border-color: rgba(251,191,36,0.25) !important;
+}
+.rj-row-con {
+  background: rgba(0,229,160,0.04);
+  border-color: rgba(0,229,160,0.15);
+}
+.rj-row-sin {
+  background: rgba(255,107,138,0.04);
+  border-color: rgba(255,107,138,0.15);
+  opacity: 0.75;
+}
+.rj-row-mio {
+  outline: 1.5px solid rgba(0,229,160,0.35);
+  outline-offset: -1px;
+}
+
+.rj-pos { font-size: 18px; min-width: 28px; text-align: center; flex-shrink: 0; }
+
+.rj-avatar {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 800; color: #fff;
+}
+.rj-avatar-top { background: linear-gradient(135deg, var(--gold), #f59e0b); }
+.rj-avatar-con { background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+.rj-avatar-sin { background: rgba(255,255,255,0.12); color: var(--text-dimmer); }
+
+.rj-info { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.rj-nombre { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rj-yo     { color: var(--accent); font-size: 12px; font-weight: 600; }
+.rj-username { font-size: 11px; color: var(--text-dimmer); }
+.rj-chances { font-size: 11px; font-weight: 600; margin-top: 1px; }
+.rj-chances-top { color: var(--gold); }
+.rj-chances-con { color: var(--accent); }
+.rj-chances-sin { color: var(--danger); opacity: 0.8; }
+
+.rj-pts-wrap { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
+.rj-pts-num { font-family: 'Clash Display','Outfit',sans-serif; font-size: 22px; font-weight: 700; color: var(--text); line-height: 1; }
+.rj-pts-max { font-size: 10px; color: var(--accent); font-weight: 700; }
+
+/* ── RANKING POR JORNADA — colores de posibilidades ── */
+
+/* Zona dinero: fondo dorado suave */
+.rj-zona {
+  background: rgba(251,191,36,0.07) !important;
+  border-color: rgba(251,191,36,0.3) !important;
+}
+.rj-zona .rr-pts-num { color: var(--gold) !important; }
+
+/* Con posibilidades: fondo verde suave */
+.rj-con {
+  background: rgba(0,229,160,0.05) !important;
+  border-color: rgba(0,229,160,0.18) !important;
+}
+
+/* Sin posibilidades: fondo rojo suave, opacidad reducida */
+.rj-sin {
+  background: rgba(255,107,138,0.05) !important;
+  border-color: rgba(255,107,138,0.15) !important;
+  opacity: 0.65;
+}
+.rj-sin .rr-pts-num { color: rgba(255,107,138,0.7) !important; }
+
+/* Avatar zona dinero */
+.rr-avatar-zona { background: linear-gradient(135deg, var(--gold), #f59e0b) !important; }
+.rr-avatar-sin  { background: rgba(255,255,255,0.1) !important; color: var(--text-dimmer) !important; }
+
+/* Leyenda */
+.rj-leyenda {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px; margin-bottom: 14px;
+  font-size: 12px; color: var(--text-dim);
+}
+.rj-ley-item { display: flex; align-items: center; gap: 6px; }
+.rj-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.rj-dot-zona { background: var(--gold);   box-shadow: 0 0 5px rgba(251,191,36,0.5); }
+.rj-dot-con  { background: var(--accent); box-shadow: 0 0 5px rgba(0,229,160,0.4); }
+.rj-dot-sin  { background: var(--danger); opacity: 0.7; }
+
+/* Pills de jornada */
+.rj-jornadas-list {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 18px;
+}
+.rj-jornada-pill {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 100px; color: var(--text-dim);
+  cursor: pointer; font-family: 'Outfit',sans-serif;
+  font-size: 13px; font-weight: 600; padding: 8px 16px;
+  transition: all 0.2s; display: flex; align-items: center; gap: 5px;
+  -webkit-tap-highlight-color: transparent;
+}
+.rj-jornada-pill.active { background: rgba(0,229,160,0.10); border-color: rgba(0,229,160,0.35); color: var(--accent); }
+.rj-pill-done { font-size: 10px; color: var(--accent); }

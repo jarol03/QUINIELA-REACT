@@ -4,6 +4,7 @@ import "../styles/panel.css";
 import "../styles/user.css";
 import FinalTab from "./FinalTab";
 import RachaView from "./RachaView";
+import RankingJornada from "./RankingJornada";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function isPartidoClosed(partido) {
@@ -65,6 +66,7 @@ function medalEmoji(pos, pts) {
 // ── Componente principal ───────────────────────────────────────────────────
 export default function UserPanel({ user, onLogout }) {
   const [tab, setTab]                       = useState("jornadas"); // jornadas | puntos | ranking
+  const [rankingSubTab, setRankingSubTab]   = useState("global");
   const [jornadas, setJornadas]             = useState([]);
   const [jornadaPartidos, setJornadaPartidos] = useState({});
   const [selectedJornada, setSelectedJornada] = useState(null);
@@ -496,44 +498,68 @@ export default function UserPanel({ user, onLogout }) {
         {tab === "ranking" && (
           <div className="user-tab-content">
             <div className="user-section-header">
-              <h2 className="user-section-title">Ranking Global</h2>
-              <p className="user-section-sub">Suma de todas las jornadas</p>
+              <h2 className="user-section-title">Ranking</h2>
             </div>
 
-            {loadingRanking ? (
-              <div className="loading-state"><div className="spinner" /></div>
-            ) : ranking.length === 0 ? (
-              <div className="empty-state">
-                <span className="empty-icon">🏆</span>
-                <p>Ranking no disponible</p>
-                <span>Se activará cuando haya resultados ingresados.</span>
-              </div>
-            ) : (
-              <div className="ranking-list">
-                {ranking.map(u => {
-                  const esMio = u.id === user.id;
-                  return (
-                    <div key={u.id} className={`ranking-row ${esMio ? "ranking-row-me" : ""} ${u.pos <= 3 && u.pts > 0 ? `ranking-row-top${u.pos}` : ""}`}>
-                      <div className="rr-pos">{medalEmoji(u.pos, u.pts)}</div>
-                      <div className="rr-avatar">{(u.nombre || u.username).charAt(0).toUpperCase()}</div>
-                      <div className="rr-info">
-                        <span className="rr-nombre">
-                          {u.nombre || u.username}
-                          {esMio && <span className="rr-yo"> (tú)</span>}
-                        </span>
-                        {/* {u.nombre && u.nombre !== u.username && (
-                          <span className="rr-username">@{u.username}</span>
-                        )} */}
-                      </div>
-                      <div className="rr-pts">
-                        <span className="rr-pts-num">{u.pts}</span>
-                        <span className="rr-pts-label">pts</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            {/* Sub-tabs */}
+            <div className="rk-subtabs">
+              <button
+                className={`rk-subtab ${rankingSubTab === "global" ? "active" : ""}`}
+                onClick={() => setRankingSubTab("global")}
+              >
+                🌍 Global
+              </button>
+              <button
+                className={`rk-subtab ${rankingSubTab === "jornada" ? "active" : ""}`}
+                onClick={() => setRankingSubTab("jornada")}
+              >
+                📋 Por Jornada
+              </button>
+            </div>
+
+            {/* Global */}
+            {rankingSubTab === "global" && (
+              <>
+                <p className="user-section-sub" style={{ marginBottom: 16 }}>Suma de todas las jornadas</p>
+                {loadingRanking ? (
+                  <div className="loading-state"><div className="spinner" /></div>
+                ) : ranking.length === 0 ? (
+                  <div className="empty-state">
+                    <span className="empty-icon">🏆</span>
+                    <p>Ranking no disponible</p>
+                    <span>Se activará cuando haya resultados ingresados.</span>
+                  </div>
+                ) : (
+                  <div className="ranking-list">
+                    {ranking.map(u => {
+                      const esMio = u.id === user.id;
+                      return (
+                        <div key={u.id} className={`ranking-row ${esMio ? "ranking-row-me" : ""} ${u.pos <= 3 && u.pts > 0 ? `ranking-row-top${u.pos}` : ""}`}>
+                          <div className="rr-pos">{medalEmoji(u.pos, u.pts)}</div>
+                          <div className="rr-avatar">{(u.nombre || u.username).charAt(0).toUpperCase()}</div>
+                          <div className="rr-info">
+                            <span className="rr-nombre">
+                              {u.nombre || u.username}
+                              {esMio && <span className="rr-yo"> (tú)</span>}
+                            </span>
+                            {u.nombre && u.nombre !== u.username && (
+                              <span className="rr-username">@{u.username}</span>
+                            )}
+                          </div>
+                          <div className="rr-pts">
+                            <span className="rr-pts-num">{u.pts}</span>
+                            <span className="rr-pts-label">pts</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
+
+            {/* Por jornada */}
+            {rankingSubTab === "jornada" && <RankingJornada user={user} />}
           </div>
         )}
         {/* ═══════════ TAB: FINAL ═══════════ */}
