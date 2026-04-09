@@ -37,11 +37,21 @@ export default function PDFExportModal({
     };
   }, [open]);
 
+
   if (!open) return null;
 
-  const itemsPerCol = Math.ceil(data.length / cols);
+  // Ordenar por nombre solo en previas
+  const sortedData = type === "previas"
+    ? [...data].sort((a, b) => {
+        const nA = (a.nombre || a.username || "").toLowerCase();
+        const nB = (b.nombre || b.username || "").toLowerCase();
+        return nA.localeCompare(nB, "es");
+      })
+    : data;
+
+  const itemsPerCol = Math.ceil(sortedData.length / cols);
   const columns = Array.from({ length: cols }, (_, i) =>
-    data.slice(i * itemsPerCol, (i + 1) * itemsPerCol),
+    sortedData.slice(i * itemsPerCol, (i + 1) * itemsPerCol),
   );
 
   const fsMap = {
@@ -340,7 +350,8 @@ export default function PDFExportModal({
         PAD,
         H - 5,
       );
-      doc.text(`${data.length} participantes`, W - PAD, H - 5, {
+
+      doc.text(`${sortedData.length} participantes`, W - PAD, H - 5, {
         align: "right",
       });
 
