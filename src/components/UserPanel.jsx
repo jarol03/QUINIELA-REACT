@@ -41,6 +41,52 @@ function calcPuntos(pron, partido) {
   return rp === rr ? 1 : 0;
 }
 
+const PAGE_SIZE = 1000;
+
+async function fetchAllPaginated(queryFactory, pageSize = PAGE_SIZE) {
+  const allRows = [];
+  let from = 0;
+  while (true) {
+    const to = from + pageSize - 1;
+    const { data, error } = await queryFactory(from, to);
+    if (error) throw error;
+    const page = data || [];
+    allRows.push(...page);
+    if (page.length < pageSize) break;
+    from += pageSize;
+  }
+  return allRows;
+}
+
+function safeTs(iso) {
+  if (!iso) return 0;
+  const ts = new Date(iso).getTime();
+  return Number.isNaN(ts) ? 0 : ts;
+}
+
+function buildPronosticosIndex(pronosticos) {
+  const index = new Map();
+  (pronosticos || []).forEach((pr) => {
+    const key = `${pr.usuario_id}|${pr.partido_id}`;
+    const prev = index.get(key);
+    if (!prev || safeTs(pr.created_at) >= safeTs(prev.created_at)) {
+      index.set(key, pr);
+    }
+  });
+  return index;
+}
+
+function buildMisPronsByPartido(pronosticos) {
+  const index = new Map();
+  (pronosticos || []).forEach((pr) => {
+    const prev = index.get(pr.partido_id);
+    if (!prev || safeTs(pr.created_at) >= safeTs(prev.created_at)) {
+      index.set(pr.partido_id, pr);
+    }
+  });
+  return index;
+}
+
 function addPosRanking(arr) {
   const result = [];
   let posActual = 1;
@@ -131,50 +177,88 @@ export default function UserPanel({ user, onLogout }) {
 
   const loadRanking = async () => {
     setLoadingRanking(true);
-    // FIX: Filtrar pronósticos en BD, no en memoria (respeta límite de 1000)
-    const [{ data: usrs }, { data: allPts }, { data: misPronsMiosData }, { data: js }, { data: allPronsForRanking }] = await Promise.all([
-      supabase.from("usuarios").select("id, username, nombre").order("username"),
-      supabase.from("partidos").select("*"),
-      supabase.from("pronosticos").select("*").eq("usuario_id", user.id), // Filtrar EN BD
-      supabase.from("jornadas").select("*").order("created_at"),
-      supabase.from("pronosticos").select("*"), // Para ranking (todos los usuarios)
-    ]);
+    try {
+      const [
+        { data: usrs, error: usrsError },
+        { data: js, error: jsError },
+        allPts,
+        misPronsMiosData,
+        allPronsForRanking,
+      ] = await Promise.all([
+        supabase.from("usuarios").select("id, username, nombre").order("username"),
+        supabase.from("jornadas").select("*").order("created_at"),
+        fetchAllPaginated((from, to) =>
+          supabase.from("partidos").select("*").range(from, to)
+        ),
+        fetchAllPaginated((from, to) =>
+          supabase
+            .from("pronosticos")
+            .select("*")
+            .eq("usuario_id", user.id)
+            .range(from, to)
+        ),
+        fetchAllPaginated((from, to) =>
+          supabase.from("pronosticos").select("*").range(from, to)
+        ),
+      ]);
 
-    const jornadasConRes = (js || []).filter(j =>
-      (allPts || []).some(p => p.jornada_id === j.id && p.goles_local_real != null)
-    );
-    setMisJornadas(jornadasConRes);
-    setAllPartidos(allPts || []);
-    // Usar los pronósticos filtrados en BD
-    setAllPronsMios(misPronsMiosData || []);
+      if (usrsError) throw usrsError;
+      if (jsError) throw jsError;
 
-    // DEBUG: Guardar en window para acceso desde consola
-    window.__ReactDebugInfo = {
-      usuario: user,
-      allPronsMios: misPronsMiosData,
-      allPartidos: allPts,
-      misJornadas: jornadasConRes,
-    };
+      const jornadasConRes = (js || []).filter((j) =>
+        (allPts || []).some((p) => p.jornada_id === j.id && p.goles_local_real != null)
+      );
+      const misPronsUnicos = Array.from(
+        buildMisPronsByPartido(misPronsMiosData).values()
+      );
+      const pronIndex = buildPronosticosIndex(allPronsForRanking);
 
-    const rankData = (usrs || []).map(u => {
-      let totalPts = 0;
-      const porJornada = {};
-      jornadasConRes.forEach(j => {
-        const ptsDej = (allPts || []).filter(p => p.jornada_id === j.id);
-        let jPts = 0;
-        ptsDej.forEach(p => {
-          const pron = (allPronsForRanking || []).find(pr => pr.usuario_id === u.id && pr.partido_id === p.id);
-          const pts = calcPuntos(pron, p);
-          if (pts === 3) { jPts += 3; totalPts += 3; }
-          else if (pts === 1) { jPts += 1; totalPts += 1; }
-        });
-        porJornada[j.id] = jPts;
-      });
-      return { ...u, pts: totalPts, porJornada };
-    }).sort((a, b) => b.pts - a.pts);
+      setMisJornadas(jornadasConRes);
+      setAllPartidos(allPts || []);
+      setAllPronsMios(misPronsUnicos);
 
-    setRanking(addPosRanking(rankData));
-    setLoadingRanking(false);
+      // DEBUG: Guardar en window para acceso desde consola
+      window.__ReactDebugInfo = {
+        usuario: user,
+        allPronsMios: misPronsUnicos,
+        allPartidos: allPts,
+        misJornadas: jornadasConRes,
+      };
+
+      const rankData = (usrs || [])
+        .map((u) => {
+          let totalPts = 0;
+          const porJornada = {};
+          jornadasConRes.forEach((j) => {
+            const ptsDej = (allPts || []).filter((p) => p.jornada_id === j.id);
+            let jPts = 0;
+            ptsDej.forEach((p) => {
+              const pron = pronIndex.get(`${u.id}|${p.id}`);
+              const pts = calcPuntos(pron, p);
+              if (pts === 3) {
+                jPts += 3;
+                totalPts += 3;
+              } else if (pts === 1) {
+                jPts += 1;
+                totalPts += 1;
+              }
+            });
+            porJornada[j.id] = jPts;
+          });
+          return { ...u, pts: totalPts, porJornada };
+        })
+        .sort((a, b) => b.pts - a.pts);
+
+      setRanking(addPosRanking(rankData));
+    } catch (err) {
+      console.error("❌ Error al cargar ranking global:", err);
+      setMisJornadas([]);
+      setAllPartidos([]);
+      setAllPronsMios([]);
+      setRanking([]);
+    } finally {
+      setLoadingRanking(false);
+    }
   };
 
   const selectJornada = async (jornada) => {

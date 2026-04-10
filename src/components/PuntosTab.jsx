@@ -13,6 +13,41 @@ function calcPuntos(pron, partido) {
   return resPron === resReal ? 1 : 0;
 }
 
+const PAGE_SIZE = 1000;
+
+async function fetchAllPaginated(queryFactory, pageSize = PAGE_SIZE) {
+  const allRows = [];
+  let from = 0;
+  while (true) {
+    const to = from + pageSize - 1;
+    const { data, error } = await queryFactory(from, to);
+    if (error) throw error;
+    const page = data || [];
+    allRows.push(...page);
+    if (page.length < pageSize) break;
+    from += pageSize;
+  }
+  return allRows;
+}
+
+function safeTs(iso) {
+  if (!iso) return 0;
+  const ts = new Date(iso).getTime();
+  return Number.isNaN(ts) ? 0 : ts;
+}
+
+function buildPronosticosIndex(pronosticos) {
+  const index = new Map();
+  (pronosticos || []).forEach((pr) => {
+    const key = `${pr.usuario_id}|${pr.partido_id}`;
+    const prev = index.get(key);
+    if (!prev || safeTs(pr.created_at) >= safeTs(prev.created_at)) {
+      index.set(key, pr);
+    }
+  });
+  return index;
+}
+
 function addPos(arr) {
   // Empate = mismos puntos (sin importar exactos ni resultados)
   // Posiciones sin salto: 1, 1, 2, 3
@@ -75,39 +110,64 @@ export default function PuntosTab() {
   // ── Cargar ranking global ──────────────────────────────────────────────
   const loadGlobal = async () => {
     setLoadingGlobal(true);
-    const [{ data: usrs }, { data: allPts }, { data: allPronsList }, { data: js }] = await Promise.all([
-      supabase.from("usuarios").select("*").order("username"),
-      supabase.from("partidos").select("*"),
-      supabase.from("pronosticos").select("*"),
-      supabase.from("jornadas").select("*").order("created_at"),
-    ]);
+    try {
+      const [usrs, allPts, allPronsList, js] = await Promise.all([
+        fetchAllPaginated((from, to) =>
+          supabase.from("usuarios").select("*").order("username").range(from, to)
+        ),
+        fetchAllPaginated((from, to) =>
+          supabase.from("partidos").select("*").range(from, to)
+        ),
+        fetchAllPaginated((from, to) =>
+          supabase.from("pronosticos").select("*").range(from, to)
+        ),
+        fetchAllPaginated((from, to) =>
+          supabase.from("jornadas").select("*").order("created_at").range(from, to)
+        ),
+      ]);
 
-    const jornadasConRes = (js || []).filter(j =>
-      (allPts || []).some(p => p.jornada_id === j.id && p.goles_local_real !== null)
-    );
-    setAllJornadas(jornadasConRes);
+      const pronIndex = buildPronosticosIndex(allPronsList);
+      const jornadasConRes = (js || []).filter((j) =>
+        (allPts || []).some((p) => p.jornada_id === j.id && p.goles_local_real !== null)
+      );
+      setAllJornadas(jornadasConRes);
 
-    const global = (usrs || []).map(u => {
-      let totalPts = 0, totalExactos = 0, totalResultados = 0;
-      const porJornada = {};
+      const global = (usrs || [])
+        .map((u) => {
+          let totalPts = 0, totalExactos = 0, totalResultados = 0;
+          const porJornada = {};
 
-      jornadasConRes.forEach(j => {
-        const ptsDej = (allPts || []).filter(p => p.jornada_id === j.id);
-        let jPts = 0;
-        ptsDej.forEach(p => {
-          const pron = (allPronsList || []).find(pr => pr.usuario_id === u.id && pr.partido_id === p.id);
-          const puntos = calcPuntos(pron, p);
-          if (puntos === 3) { jPts += 3; totalPts += 3; totalExactos++; }
-          else if (puntos === 1) { jPts += 1; totalPts += 1; totalResultados++; }
-        });
-        porJornada[j.id] = jPts;
-      });
+          jornadasConRes.forEach((j) => {
+            const ptsDej = (allPts || []).filter((p) => p.jornada_id === j.id);
+            let jPts = 0;
+            ptsDej.forEach((p) => {
+              const pron = pronIndex.get(`${u.id}|${p.id}`);
+              const puntos = calcPuntos(pron, p);
+              if (puntos === 3) {
+                jPts += 3;
+                totalPts += 3;
+                totalExactos++;
+              } else if (puntos === 1) {
+                jPts += 1;
+                totalPts += 1;
+                totalResultados++;
+              }
+            });
+            porJornada[j.id] = jPts;
+          });
 
-      return { ...u, pts: totalPts, exactos: totalExactos, resultados: totalResultados, porJornada };
-    }).sort((a, b) => b.pts - a.pts);
+          return { ...u, pts: totalPts, exactos: totalExactos, resultados: totalResultados, porJornada };
+        })
+        .sort((a, b) => b.pts - a.pts);
 
-    setGlobalData(addPos(global));
-    setLoadingGlobal(false);
+      setGlobalData(addPos(global));
+    } catch (err) {
+      console.error("❌ Error al cargar ranking global admin:", err);
+      setAllJornadas([]);
+      setGlobalData([]);
+    } finally {
+      setLoadingGlobal(false);
+    }
   };
 
   useEffect(() => {
