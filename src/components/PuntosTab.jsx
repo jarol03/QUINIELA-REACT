@@ -109,66 +109,97 @@ export default function PuntosTab() {
 
   // ── Cargar ranking global ──────────────────────────────────────────────
   const loadGlobal = async () => {
-    setLoadingGlobal(true);
-    try {
-      const [usrs, allPts, allPronsList, js] = await Promise.all([
-        fetchAllPaginated((from, to) =>
-          supabase.from("usuarios").select("*").order("username").range(from, to)
-        ),
-        fetchAllPaginated((from, to) =>
-          supabase.from("partidos").select("*").range(from, to)
-        ),
-        fetchAllPaginated((from, to) =>
-          supabase.from("pronosticos").select("*").range(from, to)
-        ),
-        fetchAllPaginated((from, to) =>
-          supabase.from("jornadas").select("*").order("created_at").range(from, to)
-        ),
-      ]);
+  setLoadingGlobal(true);
+  try {
+    const [usrs, allPts, allPronsList, js] = await Promise.all([
+      fetchAllPaginated((from, to) =>
+        supabase.from("usuarios").select("*").order("username").range(from, to)
+      ),
+      fetchAllPaginated((from, to) =>
+        supabase.from("partidos").select("*").range(from, to)
+      ),
+      fetchAllPaginated((from, to) =>
+        supabase.from("pronosticos").select("*").range(from, to)
+      ),
+      fetchAllPaginated((from, to) =>
+        supabase.from("jornadas").select("*").order("created_at").range(from, to)
+      ),
+    ]);
 
-      const pronIndex = buildPronosticosIndex(allPronsList);
-      const jornadasConRes = (js || []).filter((j) =>
-        (allPts || []).some((p) => p.jornada_id === j.id && p.goles_local_real !== null)
-      );
-      setAllJornadas(jornadasConRes);
+    // 1. Crear el índice único de pronósticos (crucial para evitar duplicados)
+    const pronIndex = buildPronosticosIndex(allPronsList);
 
-      const global = (usrs || [])
-        .map((u) => {
-          let totalPts = 0, totalExactos = 0, totalResultados = 0;
-          const porJornada = {};
+    // 2. Filtrar jornadas que realmente tienen al menos un partido con resultado
+    const jornadasConRes = (js || []).filter((j) =>
+      (allPts || []).some((p) => p.jornada_id === j.id && p.goles_local_real !== null)
+    );
+    setAllJornadas(jornadasConRes);
 
-          jornadasConRes.forEach((j) => {
-            const ptsDej = (allPts || []).filter((p) => p.jornada_id === j.id);
-            let jPts = 0;
-            ptsDej.forEach((p) => {
-              const pron = pronIndex.get(`${u.id}|${p.id}`);
-              const puntos = calcPuntos(pron, p);
-              if (puntos === 3) {
-                jPts += 3;
-                totalPts += 3;
-                totalExactos++;
-              } else if (puntos === 1) {
-                jPts += 1;
-                totalPts += 1;
-                totalResultados++;
-              }
-            });
-            porJornada[j.id] = jPts;
-          });
+    const global = (usrs || []).map((u) => {
+      let totalPts = 0;
+      let totalExactos = 0;
+      let totalResultados = 0;
+      const porJornada = {};
 
-          return { ...u, pts: totalPts, exactos: totalExactos, resultados: totalResultados, porJornada };
-        })
-        .sort((a, b) => b.pts - a.pts);
+      jornadasConRes.forEach((j) => {
+        // Filtrar partidos de ESTA jornada
+        const partidosDeJ = (allPts || []).filter((p) => p.jornada_id === j.id);
+        let jPts = 0;
 
-      setGlobalData(addPos(global));
-    } catch (err) {
-      console.error("❌ Error al cargar ranking global admin:", err);
-      setAllJornadas([]);
-      setGlobalData([]);
-    } finally {
-      setLoadingGlobal(false);
+        partidosDeJ.forEach((p) => {
+          // Buscar el pronóstico en el mapa usando la misma llave que el UserPanel
+          const pron = pronIndex.get(`${u.id}|${p.id}`);
+          const puntos = calcPuntos(pron, p);
+
+          if (puntos === 3) {
+            jPts += 3;
+            totalPts += 3;
+            totalExactos++;
+          } else if (puntos === 1) {
+            jPts += 1;
+            totalPts += 1;
+            totalResultados++;
+          }
+        });
+        porJornada[j.id] = jPts;
+      });
+
+      return { 
+        ...u, 
+        pts: totalPts, 
+        exactos: totalExactos, 
+        resultados: totalResultados, 
+        porJornada 
+      };
+    }).sort((a, b) => b.pts - a.pts); // Ordenar por puntos descendente
+
+    setGlobalData(addPos(global));
+  } catch (err) {
+    console.error("❌ Error en ranking global admin:", err);
+  } finally {
+    setLoadingGlobal(false);
+  }
+};
+
+// Reemplaza o añade estas funciones en PuntosTab.jsx
+function safeTs(iso) {
+  if (!iso) return 0;
+  const ts = new Date(iso).getTime();
+  return Number.isNaN(ts) ? 0 : ts;
+}
+
+function buildPronosticosIndex(pronosticos) {
+  const index = new Map();
+  (pronosticos || []).forEach((pr) => {
+    const key = `${pr.usuario_id}|${pr.partido_id}`;
+    const prev = index.get(key);
+    // Solo actualiza si es el más reciente basado en created_at
+    if (!prev || safeTs(pr.created_at) >= safeTs(prev.created_at)) {
+      index.set(key, pr);
     }
-  };
+  });
+  return index;
+}
 
   useEffect(() => {
     if (innerTab === "global") loadGlobal();
