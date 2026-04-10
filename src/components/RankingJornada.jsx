@@ -64,13 +64,13 @@ export default function RankingJornada({ user }) {
     setSelectedJ(j);
     setTabla([]);
 
-    const [{ data: pts }, { data: prons }, { data: usrs }] = await Promise.all([
+    const [{ data: pts }, { data: rankingData }, { data: usrs }] = await Promise.all([
       supabase
         .from("partidos")
         .select("*")
         .eq("jornada_id", j.id)
         .order("orden"),
-      supabase.from("pronosticos").select("*").eq("jornada_id", j.id),
+      supabase.from("ranking_jornada_view").select("*").eq("jornada_id", j.id),
       supabase
         .from("usuarios")
         .select("id, username, nombre")
@@ -78,7 +78,7 @@ export default function RankingJornada({ user }) {
     ]);
 
     const partidos = pts || [];
-    const allProns = prons || [];
+    const rData = rankingData || [];
     const usuarios = usrs || [];
 
     // Partidos CON resultado y SIN resultado en esta jornada
@@ -90,18 +90,15 @@ export default function RankingJornada({ user }) {
     // (igual para todos los usuarios)
     const maxExtra = sinRes.length * 3;
 
-    // Calcular pts actuales
+    const rankMap = {};
+    rData.forEach(row => {
+       rankMap[row.usuario_id] = row.pts;
+    });
+
+    // Calcular pts actuales usando la vista
     const tablaBase = usuarios
       .map((u) => {
-        let pts = 0;
-        conRes.forEach((p) => {
-          const pron = allProns.find(
-            (pr) => pr.usuario_id === u.id && pr.partido_id === p.id,
-          );
-          const puntos = calcPuntos(pron, p);
-          if (puntos === 3) pts += 3;
-          else if (puntos === 1) pts += 1;
-        });
+        const pts = rankMap[u.id] || 0;
         return { ...u, pts, ptsMax: pts + maxExtra };
       })
       .sort((a, b) => b.pts - a.pts);

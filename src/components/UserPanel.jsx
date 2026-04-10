@@ -183,7 +183,7 @@ export default function UserPanel({ user, onLogout }) {
         { data: js, error: jsError },
         allPts,
         misPronsMiosData,
-        allPronsForRanking,
+        rankingViewData,
       ] = await Promise.all([
         supabase.from("usuarios").select("id, username, nombre").order("username"),
         supabase.from("jornadas").select("*").order("created_at"),
@@ -198,7 +198,7 @@ export default function UserPanel({ user, onLogout }) {
             .range(from, to)
         ),
         fetchAllPaginated((from, to) =>
-          supabase.from("pronosticos").select("*").range(from, to)
+          supabase.from("ranking_jornada_view").select("*").range(from, to)
         ),
       ]);
 
@@ -211,7 +211,6 @@ export default function UserPanel({ user, onLogout }) {
       const misPronsUnicos = Array.from(
         buildMisPronsByPartido(misPronsMiosData).values()
       );
-      const pronIndex = buildPronosticosIndex(allPronsForRanking);
 
       setMisJornadas(jornadasConRes);
       setAllPartidos(allPts || []);
@@ -225,27 +224,23 @@ export default function UserPanel({ user, onLogout }) {
         misJornadas: jornadasConRes,
       };
 
+      // Mapeo los puntos de la vista devuelta por Postgres
+      const rankMap = {};
+      (rankingViewData || []).forEach(row => {
+         if (!rankMap[row.usuario_id]) {
+           rankMap[row.usuario_id] = { totalPts: 0, porJornada: {} };
+         }
+         rankMap[row.usuario_id].totalPts += row.pts;
+         rankMap[row.usuario_id].porJornada[row.jornada_id] = row.pts;
+      });
+
       const rankData = (usrs || [])
         .map((u) => {
-          let totalPts = 0;
-          const porJornada = {};
-          jornadasConRes.forEach((j) => {
-            const ptsDej = (allPts || []).filter((p) => p.jornada_id === j.id);
-            let jPts = 0;
-            ptsDej.forEach((p) => {
-              const pron = pronIndex.get(`${u.id}|${p.id}`);
-              const pts = calcPuntos(pron, p);
-              if (pts === 3) {
-                jPts += 3;
-                totalPts += 3;
-              } else if (pts === 1) {
-                jPts += 1;
-                totalPts += 1;
-              }
-            });
-            porJornada[j.id] = jPts;
-          });
-          return { ...u, pts: totalPts, porJornada };
+          return {
+             ...u,
+             pts: rankMap[u.id]?.totalPts || 0,
+             porJornada: rankMap[u.id]?.porJornada || {}
+          };
         })
         .sort((a, b) => b.pts - a.pts);
 

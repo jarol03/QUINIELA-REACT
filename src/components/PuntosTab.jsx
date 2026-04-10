@@ -109,71 +109,50 @@ export default function PuntosTab() {
 
   // ── Cargar ranking global ──────────────────────────────────────────────
   const loadGlobal = async () => {
-  setLoadingGlobal(true);
-  try {
-    const [usrs, allPts, allPronsList, js] = await Promise.all([
-      fetchAllPaginated((from, to) =>
-        supabase.from("usuarios").select("*").order("username").range(from, to)
-      ),
-      fetchAllPaginated((from, to) =>
-        supabase.from("partidos").select("*").range(from, to)
-      ),
-      fetchAllPaginated((from, to) =>
-        supabase.from("pronosticos").select("*").range(from, to)
-      ),
-      fetchAllPaginated((from, to) =>
-        supabase.from("jornadas").select("*").order("created_at").range(from, to)
-      ),
-    ]);
+    setLoadingGlobal(true);
+    try {
+      const [usrs, allPts, rankingViewData, js] = await Promise.all([
+        fetchAllPaginated((from, to) =>
+          supabase.from("usuarios").select("*").order("username").range(from, to)
+        ),
+        fetchAllPaginated((from, to) =>
+          supabase.from("partidos").select("*").range(from, to)
+        ),
+        fetchAllPaginated((from, to) =>
+          supabase.from("ranking_jornada_view").select("*").range(from, to)
+        ),
+        fetchAllPaginated((from, to) =>
+          supabase.from("jornadas").select("*").order("created_at").range(from, to)
+        ),
+      ]);
 
-    // 1. Crear el índice único de pronósticos (crucial para evitar duplicados)
-    const pronIndex = buildPronosticosIndex(allPronsList);
+      const jornadasConRes = (js || []).filter((j) =>
+        (allPts || []).some((p) => p.jornada_id === j.id && p.goles_local_real !== null)
+      );
+      setAllJornadas(jornadasConRes);
 
-    // 2. Filtrar jornadas que realmente tienen al menos un partido con resultado
-    const jornadasConRes = (js || []).filter((j) =>
-      (allPts || []).some((p) => p.jornada_id === j.id && p.goles_local_real !== null)
-    );
-    setAllJornadas(jornadasConRes);
-
-    const global = (usrs || []).map((u) => {
-      let totalPts = 0;
-      let totalExactos = 0;
-      let totalResultados = 0;
-      const porJornada = {};
-
-      jornadasConRes.forEach((j) => {
-        // Filtrar partidos de ESTA jornada
-        const partidosDeJ = (allPts || []).filter((p) => p.jornada_id === j.id);
-        let jPts = 0;
-
-        partidosDeJ.forEach((p) => {
-          // Buscar el pronóstico en el mapa usando la misma llave que el UserPanel
-          const pron = pronIndex.get(`${u.id}|${p.id}`);
-          const puntos = calcPuntos(pron, p);
-
-          if (puntos === 3) {
-            jPts += 3;
-            totalPts += 3;
-            totalExactos++;
-          } else if (puntos === 1) {
-            jPts += 1;
-            totalPts += 1;
-            totalResultados++;
-          }
-        });
-        porJornada[j.id] = jPts;
+      const rankMap = {};
+      (rankingViewData || []).forEach(row => {
+         if (!rankMap[row.usuario_id]) {
+           rankMap[row.usuario_id] = { totalPts: 0, totalExactos: 0, totalResultados: 0, porJornada: {} };
+         }
+         rankMap[row.usuario_id].totalPts += row.pts;
+         rankMap[row.usuario_id].totalExactos += row.exactos;
+         rankMap[row.usuario_id].totalResultados += row.resultados;
+         rankMap[row.usuario_id].porJornada[row.jornada_id] = row.pts;
       });
 
-      return { 
-        ...u, 
-        pts: totalPts, 
-        exactos: totalExactos, 
-        resultados: totalResultados, 
-        porJornada 
-      };
-    }).sort((a, b) => b.pts - a.pts); // Ordenar por puntos descendente
+      const global = (usrs || []).map((u) => {
+        return { 
+          ...u, 
+          pts: rankMap[u.id]?.totalPts || 0,
+          exactos: rankMap[u.id]?.totalExactos || 0, 
+          resultados: rankMap[u.id]?.totalResultados || 0, 
+          porJornada: rankMap[u.id]?.porJornada || {} 
+        };
+      }).sort((a, b) => b.pts - a.pts);
 
-    setGlobalData(addPos(global));
+      setGlobalData(addPos(global));
   } catch (err) {
     console.error("❌ Error en ranking global admin:", err);
   } finally {
@@ -234,11 +213,12 @@ function buildPronosticosIndex(pronosticos) {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
-  // ── Tabla de jornada ───────────────────────────────────────────────────
+  const pronIndexJornada = buildPronosticosIndex(allProns);
+
   const tablaJornada = addPos(usuarios.map(u => {
     let pts = 0, exactos = 0, resultados = 0;
     partidos.forEach(p => {
-      const pron = allProns.find(pr => pr.usuario_id === u.id && pr.partido_id === p.id);
+      const pron = pronIndexJornada.get(`${u.id}|${p.id}`);
       const puntos = calcPuntos(pron, p);
       if (puntos === 3) { pts += 3; exactos++; }
       else if (puntos === 1) { pts += 1; resultados++; }
