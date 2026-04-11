@@ -64,17 +64,7 @@ function safeTs(iso) {
   return Number.isNaN(ts) ? 0 : ts;
 }
 
-function buildPronosticosIndex(pronosticos) {
-  const index = new Map();
-  (pronosticos || []).forEach((pr) => {
-    const key = `${pr.usuario_id}|${pr.partido_id}`;
-    const prev = index.get(key);
-    if (!prev || safeTs(pr.created_at) >= safeTs(prev.created_at)) {
-      index.set(key, pr);
-    }
-  });
-  return index;
-}
+
 
 function buildMisPronsByPartido(pronosticos) {
   const index = new Map();
@@ -146,12 +136,7 @@ export default function UserPanel({ user, onLogout }) {
     return () => window.removeEventListener("error", handleError);
   }, []);
 
-  useEffect(() => { fetchJornadas(); }, []);
-
-  // Cuando cambia al tab de puntos/ranking, cargar datos
-  useEffect(() => {
-    if (tab === "puntos" || tab === "ranking") loadRanking();
-  }, [tab]);
+  // Hooks se movieron abajo para evitar ReferenceError
 
   const fetchJornadas = async () => {
     setLoading(true);
@@ -175,7 +160,7 @@ export default function UserPanel({ user, onLogout }) {
     setLoading(false);
   };
 
-  const loadRanking = async () => {
+  const loadRanking = useCallback(async () => {
     setLoadingRanking(true);
     try {
       const [
@@ -254,7 +239,14 @@ export default function UserPanel({ user, onLogout }) {
     } finally {
       setLoadingRanking(false);
     }
-  };
+  }, [user.id]);
+
+  useEffect(() => { fetchJornadas(); }, []);
+
+  // Cuando cambia al tab de puntos/ranking, cargar datos
+  useEffect(() => {
+    if (tab === "puntos" || tab === "ranking") loadRanking();
+  }, [tab, loadRanking]);
 
   const selectJornada = async (jornada) => {
     setLoadingJornada(true);

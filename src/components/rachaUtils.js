@@ -7,6 +7,21 @@
 //   · Si no acierta ninguno del bloque → racha se rompe (reset a 0)
 //   · Si algún partido no tiene pronóstico → se ignora, no rompe
 
+export async function fetchAllPaginated(queryFactory, pageSize = 1000) {
+  const allRows = [];
+  let from = 0;
+  while (true) {
+    const to = from + pageSize - 1;
+    const { data, error } = await queryFactory(from, to);
+    if (error) throw error;
+    const page = data || [];
+    allRows.push(...page);
+    if (page.length < pageSize) break;
+    from += pageSize;
+  }
+  return allRows;
+}
+
 export function calcPuntos(pron, partido) {
   // Si el partido NO tiene resultado aún → null (ignorar en racha)
   if (partido.goles_local_real == null) return null;
@@ -127,18 +142,52 @@ export function calcRachaActual(partidosOrdenados, pronsMap, yaGano) {
 export function calcularRachas(usrs, allPts, allProns) {
   const conRes = ordenarPartidos(allPts || []);
 
+  // OPTIMIZACIÓN O(N): Agrupar todos los pronósticos por usuario de una sola pasada
+  // Esto evita hacer un .filter() de toda la lista por cada usuario.
+  const userPronsCache = {};
+  (allProns || []).forEach(pr => {
+    if (!userPronsCache[pr.usuario_id]) {
+      userPronsCache[pr.usuario_id] = {};
+    }
+    const userMap = userPronsCache[pr.usuario_id];
+    const prev = userMap[pr.partido_id];
+    
+    // Guardar solo el más reciente (aunque racha_pronosticos_view ya limpia duplicados)
+    if (!prev || new Date(pr.created_at || 0).getTime() >= new Date(prev.created_at || 0).getTime()) {
+      userMap[pr.partido_id] = pr; 
+    }
+  });
+
   const data = (usrs || []).map(u => {
-    const pronsMap = {};
-    (allProns || [])
-      .filter(pr => pr.usuario_id === u.id)
-      .forEach(pr => { pronsMap[pr.partido_id] = pr; });
+    const pronsMap = userPronsCache[u.id] || {};
 
     const primeraRacha = detectarPrimeraRacha(conRes, pronsMap);
     const yaGano       = !!primeraRacha;
     const rachaActual  = calcRachaActual(conRes, pronsMap, yaGano);
 
-    return { u, primeraRacha, yaGano, rachaActual };
+    const debugBloques = agruparPorFecha(conRes).map(bloque => {
+      let exactos = 0;
+      let conResultado = 0;
+      const puntajes = [];
+      for (const p of bloque) {
+        const pts = calcPuntos(pronsMap[p.id], p);
+        if (pts !== null) { conResultado++; }
+        if (pts === 3) { exactos++; }
+        puntajes.push({ partido: p, pts, pron: pronsMap[p.id] });
+      }
+      return { 
+        bloque, 
+        exactos, 
+        conResultado, 
+        puntajes, 
+        suma: evaluarBloque(bloque, pronsMap).suma // Re-eval to show exactly what's added
+      };
+    });
+
+    return { u, primeraRacha, yaGano, rachaActual, debugBloques };
   });
+
+  data.conResDebug = conRes; // attach directly to array for global debug
 
   data.sort((a, b) => {
     if (a.yaGano && !b.yaGano) return -1;

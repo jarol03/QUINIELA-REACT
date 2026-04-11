@@ -160,25 +160,7 @@ export default function PuntosTab() {
   }
 };
 
-// Reemplaza o añade estas funciones en PuntosTab.jsx
-function safeTs(iso) {
-  if (!iso) return 0;
-  const ts = new Date(iso).getTime();
-  return Number.isNaN(ts) ? 0 : ts;
-}
 
-function buildPronosticosIndex(pronosticos) {
-  const index = new Map();
-  (pronosticos || []).forEach((pr) => {
-    const key = `${pr.usuario_id}|${pr.partido_id}`;
-    const prev = index.get(key);
-    // Solo actualiza si es el más reciente basado en created_at
-    if (!prev || safeTs(pr.created_at) >= safeTs(prev.created_at)) {
-      index.set(key, pr);
-    }
-  });
-  return index;
-}
 
   useEffect(() => {
     if (innerTab === "global") loadGlobal();

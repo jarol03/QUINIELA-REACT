@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
-import { calcularRachas } from "./rachaUtils";
+import { calcularRachas, fetchAllPaginated } from "./rachaUtils";
 import { RachaRow } from "./RachaTab";
 
 export default function RachaView({ user }) {
@@ -11,10 +11,14 @@ export default function RachaView({ user }) {
 
   const load = async () => {
     setLoading(true);
-    const [{ data: usrs }, { data: allPts }, { data: allProns }] = await Promise.all([
+    const [
+      { data: usrs },
+      allPts,
+      allProns
+    ] = await Promise.all([
       supabase.from("usuarios").select("id, username, nombre").order("username"),
-      supabase.from("partidos").select("*"),
-      supabase.from("pronosticos").select("*"),
+      fetchAllPaginated((from, to) => supabase.from("partidos").select("*").range(from, to)),
+      fetchAllPaginated((from, to) => supabase.from("racha_pronosticos_view").select("*").range(from, to))
     ]);
     setResultados(calcularRachas(usrs, allPts, allProns));
     setLoading(false);

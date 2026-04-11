@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
-import { calcularRachas, fmtFecha } from "./rachaUtils";
+import { calcularRachas, fmtFecha, fetchAllPaginated, ordenarPartidos } from "./rachaUtils";
 
 export default function RachaTab() {
   const [resultados, setResultados] = useState([]);
@@ -9,12 +9,41 @@ export default function RachaTab() {
 
   const calcular = async () => {
     setLoading(true);
-    const [{ data: usrs }, { data: allPts }, { data: allProns }] = await Promise.all([
+    const [
+      { data: usrs },
+      allPts,
+      allProns
+    ] = await Promise.all([
       supabase.from("usuarios").select("id, username, nombre").order("username"),
-      supabase.from("partidos").select("*"),
-      supabase.from("pronosticos").select("*"),
+      fetchAllPaginated((from, to) => supabase.from("partidos").select("*").range(from, to)),
+      fetchAllPaginated((from, to) => supabase.from("racha_pronosticos_view").select("*").range(from, to))
     ]);
-    setResultados(calcularRachas(usrs, allPts, allProns));
+    const res = calcularRachas(usrs, allPts, allProns);
+    setResultados(res);
+    
+    // DEBUG DE TIEMPO PASADO
+    const conRes = ordenarPartidos(allPts);
+    if (conRes.length >= 2) {
+      const ultimoEliminado = conRes[conRes.length - 1];
+      const penultimoEliminado = conRes[conRes.length - 2];
+      
+      const calcMenos1 = calcularRachas(usrs, conRes.slice(0, -1), allProns);
+      const calcMenos2 = calcularRachas(usrs, conRes.slice(0, -2), allProns);
+      
+      console.log("=== DEBUG TIEMPO PASADO ===");
+      console.log(`1. Omitiendo el ÚLTIMO partido (${ultimoEliminado.equipo_local} vs ${ultimoEliminado.equipo_visitante}):`);
+      const vivosMenos1 = calcMenos1.filter(r => r.rachaActual > 0 || r.yaGano);
+      console.log("   ➤ Usuarios con racha viva:", vivosMenos1.length > 0 ? vivosMenos1.map(r => `${r.u.nombre || r.u.username} (Racha: ${r.rachaActual})`).join(", ") : "Ninguno");
+
+      console.log(`2. Omitiendo los DOS últimos partidos (Puebla y ${penultimoEliminado.equipo_local} vs ${penultimoEliminado.equipo_visitante}):`);
+      const vivosMenos2 = calcMenos2.filter(r => r.rachaActual > 0 || r.yaGano);
+      console.log("   ➤ Usuarios con racha viva:", vivosMenos2.length > 0 ? vivosMenos2.map(r => `${r.u.nombre || r.u.username} (Racha: ${r.rachaActual})`).join(", ") : "Ninguno");
+    }
+
+    console.log("=== DEBUG RACHAS ===");
+    console.log("Partidos con resultado (ordenados):", res.conResDebug);
+    console.log("Estado de rachas por usuario:", res);
+    console.log("====================");
     setCalculado(true);
     setLoading(false);
   };
@@ -32,9 +61,11 @@ export default function RachaTab() {
             Solo cuenta la primera vez — una vez ganado, ya no compite de nuevo.
           </p>
         </div>
-        <button className="res-save-btn" onClick={calcular} disabled={loading} style={{ padding: "10px 16px" }}>
-          {loading ? "Calculando..." : "↻ Recalcular"}
-        </button>
+        <div style={{display: "flex", gap: "8px"}}>
+          <button className="res-save-btn" onClick={calcular} disabled={loading} style={{ padding: "10px 16px" }}>
+            {loading ? "Calculando..." : "↻ Recalcular"}
+          </button>
+        </div>
       </div>
 
       {loading && <div className="loading-state"><div className="spinner" /><p>Analizando rachas...</p></div>}
@@ -88,6 +119,7 @@ export default function RachaTab() {
               <RachaRow key={u.id} u={u} yaGano={yaGano} rachaActual={rachaActual} showYo={false} />
             ))}
           </div>
+
         </>
       )}
     </div>

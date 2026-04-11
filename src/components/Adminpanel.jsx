@@ -501,11 +501,13 @@ function CopiarTab() {
   const [sortAZ, setSortAZ]       = useState(true);
   const [search, setSearch]       = useState("");
 
-  useEffect(() => { fetchJornadas(); }, []);
-  const fetchJornadas = async () => {
-    const { data } = await supabase.from("jornadas").select("*").order("created_at", { ascending: false });
-    setJornadas(data || []);
-  };
+  useEffect(() => {
+    const fetchJornadas = async () => {
+      const { data } = await supabase.from("jornadas").select("*").order("created_at", { ascending: false });
+      setJornadas(data || []);
+    };
+    fetchJornadas();
+  }, []);
 
   const loadJornada = async (j) => {
     setLoading(true); setSelectedJ(j); setUserIdx(0); setCopied(false); setSearch("");
