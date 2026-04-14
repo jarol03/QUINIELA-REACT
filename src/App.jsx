@@ -113,7 +113,8 @@ export default function App() {
 
   if (user.is_admin) return <AdminPanel user={user} onLogout={handleLogout} />;
   
-  if (!isPaid) return <AccessDenied onLogout={handleLogout} onRetry={() => verifyPayment(user.id)} />;
+  // Bloqueo de acceso temporalmente deshabilitado
+  // if (!isPaid) return <AccessDenied onLogout={handleLogout} onRetry={() => verifyPayment(user.id)} />;
   
   return <UserPanel user={user} onLogout={handleLogout} />;
 }
