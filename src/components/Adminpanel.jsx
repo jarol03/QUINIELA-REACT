@@ -233,7 +233,10 @@ function JornadasTab() {
           ) : (
             <>
               <div className="col-section">
-                <h3 className="col-label">Partidos — {selectedJ.nombre}</h3>
+                <div className="col-header-row">
+                  <h3 className="col-label" style={{margin:0}}>Partidos — {selectedJ.nombre}</h3>
+                  <button className="admin-back-btn" onClick={() => setSelectedJ(null)}>← Volver</button>
+                </div>
                 <p className="dim-text" style={{marginBottom:12}}>{partidos.length} partido{partidos.length !== 1 ? "s" : ""}</p>
                 <div className="create-stack">
                   <div className="partido-inputs-row">

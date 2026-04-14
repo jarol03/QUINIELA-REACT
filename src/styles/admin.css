@@ -295,6 +295,16 @@
 .partido-inputs-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .vs-mini-label { font-size: 11px; font-weight: 700; color: var(--text-dimmer); flex-shrink: 0; }
 
+.col-header-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 0; }
+
+.admin-back-btn {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 100px; color: var(--text-dim); cursor: pointer;
+  font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 700;
+  padding: 10px 16px; transition: all 0.2s; -webkit-tap-highlight-color: transparent;
+}
+.admin-back-btn:active { background: rgba(255,255,255,0.12); color: var(--accent); border-color: rgba(0,229,160,0.3); transform: translateX(-2px); }
+
 .partido-item-admin {
   background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
   border-radius: 14px; overflow: visible; margin-bottom: 8px;
@@ -1307,4 +1317,4 @@
     justify-content: center;
   }
 }
-
+
