@@ -744,10 +744,11 @@ function PagosTab() {
           <input 
             type="number" 
             className="monto-input" 
-            defaultValue={precioInscripcion}
+            value={precioInscripcion}
+            onChange={(e) => setPrecioInscripcion(parseFloat(e.target.value) || 0)}
             onBlur={(e) => {
               const val = parseFloat(e.target.value) || 0;
-              if (val !== precioInscripcion) saveConfig(val);
+              saveConfig(val);
             }}
             disabled={savingPrecio}
           />

@@ -246,7 +246,7 @@ export default function UserPanel({ user, onLogout }) {
     try {
       const { data } = await supabase
         .from("pagos")
-        .select("pagado, monto_pagado")
+        .select("pagado")
         .eq("usuario_id", user.id)
         .maybeSingle();
       if (data) setPagoInfo(data);
@@ -385,7 +385,7 @@ export default function UserPanel({ user, onLogout }) {
           </div>
           {/* Badge de Pago */}
           <div className={`pago-badge-header ${pagoInfo.pagado ? "is-active" : "is-pending"}`} 
-               title={pagoInfo.pagado ? `Monto registrado: L. ${pagoInfo.monto_pagado}` : "Pendiente de pago"}>
+               title={pagoInfo.pagado ? "Inscripción Activa" : "Pendiente de pago"}>
             {pagoInfo.pagado ? "Activo ✅" : "Pago Pendiente ⚠️"}
           </div>
         </div>
