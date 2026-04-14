@@ -215,7 +215,7 @@
 .unsaved-banner span   { font-size: 12px; color: var(--text-dim); }
 
 .progress-bar-wrap { display: flex; flex-direction: column; gap: 5px; }
-.progress-bar-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dimmer); }
+.progress-bar-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dimmer); gap: 10px;}
 .progress-pct { font-weight: 700; color: var(--accent); }
 .progress-bar-track { height: 4px; background: rgba(255,255,255,0.08); border-radius: 100px; overflow: hidden; }
 .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 100px; transition: width 0.4s cubic-bezier(0.16,1,0.3,1); }
@@ -226,26 +226,31 @@
 .partido-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
+  gap: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-left: 4px solid transparent;
   border-radius: 16px;
-  padding: 12px 14px;
-  transition: border-color 0.2s;
+  padding: 14px 12px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   animation: fadeUp 0.35s cubic-bezier(0.16,1,0.3,1) both;
 }
-.partido-row:hover { border-color: rgba(255,255,255,0.15); }
-.partido-row.partido-readonly { opacity: 0.7; }
-.partido-row.partido-saved  { border-color: rgba(0,229,160,0.22) !important; }
-.partido-row.partido-modified { border-color: rgba(251,191,36,0.32) !important; }
+.partido-row:hover { 
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.12);
+  transform: translateX(4px);
+}
+.partido-row.partido-readonly { opacity: 0.6; pointer-events: none; }
+.partido-row.partido-saved  { border-left-color: var(--accent); background: rgba(0,229,160,0.02); }
+.partido-row.partido-modified { border-left-color: var(--gold); background: rgba(251,191,36,0.02); }
 
 .partido-num { font-size: 13px; font-weight: 700; color: var(--text-dimmer); min-width: 18px; flex-shrink: 0; }
 
-.partido-teams { flex: 1; min-width: 0; }
-.partido-teams-inner { display: flex; flex-direction: column; gap: 2px; }
-.team-vs-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
-.team-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
-.vs-sep { font-size: 9px; font-weight: 800; letter-spacing: 1px; color: var(--text-dimmer); flex-shrink: 0; }
+.partido-teams { flex: 1; min-width: 0; width: 100%; max-width: none !important; }
+.partido-teams-inner { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.team-vs-row { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 2px 0; width: 100%; }
+.team-name { display: block; width: 100%; font-size: 14px; font-weight: 600; color: #fff; text-align: left; line-height: 1.2; white-space: nowrap; overflow: visible; letter-spacing: -0.2px; }
+.vs-sep { font-size: 8px; font-weight: 900; color: var(--accent); background: rgba(0,229,160,0.08); border: 1px solid rgba(0,229,160,0.15); padding: 1px 10px; border-radius: 100px; letter-spacing: 2px; text-transform: uppercase; }
 
 .partido-fecha { font-size: 10px; font-weight: 600; }
 .partido-fecha-open   { color: rgba(0,229,160,0.65); }
@@ -254,17 +259,16 @@
 .score-inputs { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
 
 .score-input {
-  width: 46px; height: 46px;
-  background: rgba(255,255,255,0.07);
-  border: 1.5px solid rgba(255,255,255,0.12);
+  width: 44px; height: 44px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 12px;
-  color: var(--text);
-  font-family: 'Clash Display', 'Outfit', sans-serif;
+  color: #fff;
+  font-family: 'Clash Display', sans-serif;
   font-size: 20px; font-weight: 700;
   text-align: center;
   outline: none;
-  -moz-appearance: textfield;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
   -webkit-tap-highlight-color: transparent;
 }
 .score-input::-webkit-outer-spin-button,
@@ -546,9 +550,11 @@
 
 .mjp-p-teams {
   font-size: 13px; font-weight: 700; color: var(--text);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  width: 100%; min-width: 0; white-space: nowrap; overflow: visible;
 }
-.mjp-p-vs { font-size: 10px; color: var(--text-dimmer); margin: 0 3px; }
+.mjp-p-teams span { display: block; width: 100%; }
+.mjp-p-vs { font-size: 9px; color: var(--text-dimmer); font-weight: 800; margin: 2px 0; text-transform: uppercase; opacity: 0.6; }
 
 .mjp-p-scores { display: flex; gap: 10px; flex-wrap: wrap; }
 
@@ -1011,4 +1017,4 @@
     padding: 0 10px;
     font-size: 10px;
   }
-}
+}

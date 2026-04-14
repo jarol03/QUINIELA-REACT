@@ -591,9 +591,11 @@ export default function UserPanel({ user, onLogout }) {
                                   <span className="mjp-p-num">{i + 1}</span>
 
                                   <div className="mjp-p-info">
-                                    <span className="mjp-p-teams">
-                                      {p.equipo_local} <span className="mjp-p-vs">vs</span> {p.equipo_visitante}
-                                    </span>
+                                    <div className="mjp-p-teams">
+                                      <span>{p.equipo_local}</span>
+                                      <span className="mjp-p-vs">vs</span>
+                                      <span>{p.equipo_visitante}</span>
+                                    </div>
                                     <div className="mjp-p-scores">
                                       {/* Resultado real */}
                                       <span className="mjp-p-real">
