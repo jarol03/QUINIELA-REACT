@@ -14,7 +14,7 @@ const TABS = [
   { id: "usuarios", icon: "👥",  label: "Jugadores" },
   { id: "puntos",   icon: "🏆",  label: "Puntos" },
   { id: "previas",  icon: "📊",  label: "Previas" },
-  { id: "final",    icon: "🥇",  label: "La Final" },
+  { id: "final",    icon: "🥇",  label: "Final" },
   { id: "racha",    icon: "🔥",  label: "Racha" },
   { id: "copiar",   icon: "📋",  label: "Copiar" },
   { id: "pagos",    icon: "💰",  label: "Pagos" },
@@ -776,4 +776,4 @@ function PagosTab() {
       </div>
     </div>
   );
-}
+}
