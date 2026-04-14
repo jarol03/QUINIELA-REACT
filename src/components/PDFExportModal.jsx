@@ -27,7 +27,8 @@ export default function PDFExportModal({
     if (n <= 20) setCols(1);
     else if (n <= 45) setCols(2);
     else if (n <= 80) setCols(3);
-    else setCols(4);
+    else if (n <= 120) setCols(4);
+    else setCols(5);
   }, [open, data.length]);
 
   useEffect(() => {
@@ -79,14 +80,14 @@ export default function PDFExportModal({
       const doc = new jsPDF({
         orientation: "landscape",
         unit: "mm",
-        format: [220, 210],
+        format: [270, 260],
       });
       const W = doc.internal.pageSize.getWidth();
       const H = doc.internal.pageSize.getHeight();
       const PAD = 12;
 
       // --- LÓGICA DE DESPLAZAMIENTO (Solo para previas) ---
-      const offsetMap = { 1: 90, 2: 40, 3: 20, 4: 12, 5: 5 };
+      const offsetMap = { 1: 90, 2: 40, 3: 26, 4: 22, 5: 15 };
       const currentOffset = type === "previas" ? offsetMap[cols] || 17 : 17;
       const dataBlockWidth = type === "previas" ? currentOffset + 5 : 25;
 
@@ -383,7 +384,7 @@ export default function PDFExportModal({
             <div className="pdfm-field">
               <label className="pdfm-label">Número de columnas</label>
               <div className="pdfm-cols-btns">
-                {[3, 4].map((n) => (
+                {[3, 4, 5].map((n) => (
                   <button
                     key={n}
                     className={`pdfm-col-btn ${cols === n ? "active" : ""}`}
