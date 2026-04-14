@@ -121,6 +121,7 @@ export default function UserPanel({ user, onLogout }) {
   const [allPartidos, setAllPartidos]           = useState([]);
   const [allPronsMios, setAllPronsMios]         = useState([]);
   const [jornadaExpandida, setJornadaExpandida] = useState(null);
+  const [pagoInfo, setPagoInfo]                 = useState({ pagado: false, monto_pagado: 0 });
 
   const debugLog = useRef([]);
 
@@ -241,7 +242,23 @@ export default function UserPanel({ user, onLogout }) {
     }
   }, [user.id]);
 
-  useEffect(() => { fetchJornadas(); }, []);
+  const fetchPagoInfo = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from("pagos")
+        .select("pagado, monto_pagado")
+        .eq("usuario_id", user.id)
+        .maybeSingle();
+      if (data) setPagoInfo(data);
+    } catch (err) {
+      console.error("Error al cargar info de pago:", err);
+    }
+  }, [user.id]);
+
+  useEffect(() => { 
+    fetchJornadas(); 
+    fetchPagoInfo();
+  }, [fetchPagoInfo]);
 
   // Cuando cambia al tab de puntos/ranking, cargar datos
   useEffect(() => {
@@ -365,6 +382,11 @@ export default function UserPanel({ user, onLogout }) {
           <div>
             <span className="user-header-name">{user.nombre || user.username}</span>
             {misPts > 0 && <span className="user-header-pts">{misPts} pts · #{misRankg}</span>}
+          </div>
+          {/* Badge de Pago */}
+          <div className={`pago-badge-header ${pagoInfo.pagado ? "is-active" : "is-pending"}`} 
+               title={pagoInfo.pagado ? `Monto registrado: L. ${pagoInfo.monto_pagado}` : "Pendiente de pago"}>
+            {pagoInfo.pagado ? "Activo ✅" : "Pago Pendiente ⚠️"}
           </div>
         </div>
         <button className="panel-logout" onClick={onLogout}>Salir</button>

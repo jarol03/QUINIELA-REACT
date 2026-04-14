@@ -17,6 +17,7 @@ const TABS = [
   { id: "final",    icon: "🥇",  label: "La Final" },
   { id: "racha",    icon: "🔥",  label: "Racha" },
   { id: "copiar",   icon: "📋",  label: "Copiar" },
+  { id: "pagos",    icon: "💰",  label: "Pagos" },
 ];
 
 const TAB_DESC = {
@@ -27,6 +28,7 @@ const TAB_DESC = {
   final:    "Predicción del partido final",
   racha:    "Premio por 3 exactos seguidos",
   copiar:   "Exporta pronósticos a Excel",
+  pagos:    "Control de pagos y recaudación",
 };
 
 export default function AdminPanel({ user, onLogout }) {
@@ -61,6 +63,7 @@ export default function AdminPanel({ user, onLogout }) {
         {tab === "final"    && <AdminFinalTab />}
         {tab === "racha"    && <RachaTab />}
         {tab === "copiar"   && <CopiarTab />}
+        {tab === "pagos"    && <PagosTab />}
       </div>
 
       {/* ── BOTTOM NAV ── */}
@@ -639,3 +642,138 @@ function CopiarTab() {
     </div>
   );
 }
+
+function PagosTab() {
+  const [usuarios, setUsuarios] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [toast, setToast] = useState("");
+  const [updating, setUpdating] = useState(null);
+  const [precioInscripcion, setPrecioInscripcion] = useState(0);
+  const [savingPrecio, setSavingPrecio] = useState(false);
+
+  useEffect(() => { 
+    fetchUsuarios(); 
+    fetchConfig();
+  }, []);
+
+  const fetchConfig = async () => {
+    const { data } = await supabase
+      .from("configuracion")
+      .select("valor")
+      .eq("clave", "precio_inscripcion")
+      .maybeSingle();
+    if (data) setPrecioInscripcion(data.valor.monto || 0);
+  };
+
+  const saveConfig = async (monto) => {
+    setSavingPrecio(true);
+    const { error } = await supabase
+      .from("configuracion")
+      .upsert({ clave: "precio_inscripcion", valor: { monto } });
+    if (!error) {
+      setPrecioInscripcion(monto);
+      showToast("Precio guardado ✓");
+    } else {
+      showToast("Error al guardar precio");
+    }
+    setSavingPrecio(false);
+  };
+
+  const fetchUsuarios = async () => {
+    setLoading(true);
+    const { data: usrs } = await supabase.from("usuarios").select("id, username, nombre").order("nombre");
+    const { data: pgs } = await supabase.from("pagos").select("*");
+    const combined = (usrs || []).map(u => {
+      const p = pgs?.find(x => x.usuario_id === u.id);
+      return { ...u, pagado: p?.pagado ?? false };
+    });
+    setUsuarios(combined);
+    setLoading(false);
+  };
+
+  const syncPago = async (user, updates) => {
+    setUpdating(user.id);
+    const { error } = await supabase.from("pagos").upsert({
+      usuario_id: user.id,
+      ...updates,
+      updated_at: new Date().toISOString()
+    });
+    if (!error) {
+      setUsuarios(prev => prev.map(u => u.id === user.id ? { ...u, ...updates } : u));
+      if (updates.pagado !== undefined) {
+        showToast(updates.pagado ? "Marcado como pagado ✓" : "Marcado como pendiente");
+      }
+    } else {
+      showToast("Error al guardar");
+    }
+    setUpdating(null);
+  };
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2000); };
+
+  const filtered = usuarios.filter(u =>
+    (u.nombre || "").toLowerCase().includes(search.toLowerCase()) ||
+    u.username.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const pagadosCount = usuarios.filter(u => u.pagado).length;
+  const totalDinero = pagadosCount * precioInscripcion;
+
+  return (
+    <div className="pagos-tab">
+      {toast && <div className="toast">{toast}</div>}
+      <div className="pagos-summary-grid">
+        <div className="pagos-stat-card">
+          <span className="psc-label">Participantes Pagados</span>
+          <span className="psc-value">{pagadosCount} <span className="psc-total">/ {usuarios.length}</span></span>
+        </div>
+        <div className="pagos-stat-card highlight">
+          <span className="psc-label">Total Recaudado</span>
+          <span className="psc-value">L. {totalDinero.toLocaleString()}</span>
+        </div>
+      </div>
+
+      <div className="pagos-config-card">
+        <div className="pcc-info">
+          <span className="pcc-label">Precio de Inscripción</span>
+          <span className="pcc-sub">Establece el monto único para todos</span>
+        </div>
+        <div className="pcc-action">
+          <span className="monto-currency">L.</span>
+          <input 
+            type="number" 
+            className="monto-input" 
+            defaultValue={precioInscripcion}
+            onBlur={(e) => {
+              const val = parseFloat(e.target.value) || 0;
+              if (val !== precioInscripcion) saveConfig(val);
+            }}
+            disabled={savingPrecio}
+          />
+        </div>
+      </div>
+      <div className="pagos-controls">
+        <h3 className="col-label">Lista de Usuarios</h3>
+        <input className="admin-input" placeholder="🔍 Buscar..." value={search} onChange={e => setSearch(e.target.value)} />
+      </div>
+      <div className="pagos-list">
+        {loading && <div className="loading-state"><div className="spinner" /> Cargando...</div>}
+        {filtered.map(u => (
+          <div key={u.id} className={`pago-card ${u.pagado ? "is-paid" : ""}`}>
+            <div className="pago-card-info">
+              <span className="pci-name">{u.nombre || u.username}</span>
+              <span className="pci-username">@{u.username}</span>
+            </div>
+            <div className="pago-card-actions">
+              <button className={`pago-toggle ${u.pagado ? "btn-paid" : "btn-pending"}`}
+                onClick={() => syncPago(u, { pagado: !u.pagado })} disabled={updating === u.id}>
+                {u.pagado ? "✓ PAGADO" : "MARCAR PAGO"}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
