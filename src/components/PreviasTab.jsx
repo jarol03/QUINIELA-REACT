@@ -2,6 +2,22 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "../supabaseClient";
 import PDFExportModal from "./PDFExportModal";
 
+const PAGE_SIZE = 1000;
+async function fetchAllPaginated(queryFactory, pageSize = PAGE_SIZE) {
+  const allRows = [];
+  let from = 0;
+  while (true) {
+    const to = from + pageSize - 1;
+    const { data, error } = await queryFactory(from, to);
+    if (error) throw error;
+    const page = data || [];
+    allRows.push(...page);
+    if (page.length < pageSize) break;
+    from += pageSize;
+  }
+  return allRows;
+}
+
 function getGEP(gL, gV) {
   if (gL === null || gV === null || gL === undefined || gV === undefined) return null;
   if (Number(gL) > Number(gV)) return "G";
@@ -44,16 +60,23 @@ export default function PreviasTab() {
     setSelectedJ(j);
     setSelectedP(null);
     setSearch("");
-    const [{ data: pts }, { data: prons }, { data: usrs }] = await Promise.all([
-      supabase.from("partidos").select("*").eq("jornada_id", j.id).order("orden"),
-      supabase.from("pronosticos").select("*").eq("jornada_id", j.id),
-      supabase.from("usuarios").select("*").order("username"),
-    ]);
-    setPartidos(pts || []);
-    setAllProns(prons || []);
-    setUsuarios(usrs || []);
-    setLoading(false);
-    setVista("partidos");
+    try {
+      const [ptsData, usrsData, pronsData] = await Promise.all([
+        supabase.from("partidos").select("*").eq("jornada_id", j.id).order("orden"),
+        supabase.from("usuarios").select("*").order("username"),
+        fetchAllPaginated((from, to) =>
+          supabase.from("pronosticos").select("*").eq("jornada_id", j.id).range(from, to)
+        ),
+      ]);
+      setPartidos(ptsData.data || []);
+      setUsuarios(usrsData.data || []);
+      setAllProns(pronsData || []);
+      setVista("partidos");
+    } catch (err) {
+      console.error("Error al cargar previa:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const selectPartido = (p) => {
@@ -65,8 +88,20 @@ export default function PreviasTab() {
   // ── Datos del partido seleccionado ──
   const previaDatos = useMemo(() => {
     if (!selectedP) return [];
+    
+    // Optimizamos creando un mapa de pronósticos del partido actual indexado por usuario_id
+    const pMap = new Map();
+    const targetPId = String(selectedP.id).toLowerCase();
+    
+    allProns.forEach(pr => {
+      if (String(pr.partido_id).toLowerCase() === targetPId) {
+        pMap.set(String(pr.usuario_id).toLowerCase(), pr);
+      }
+    });
+
     return usuarios.map(u => {
-      const pron = allProns.find(pr => pr.usuario_id === u.id && pr.partido_id === selectedP.id);
+      const uSearch = String(u.id).toLowerCase();
+      const pron = pMap.get(uSearch);
       return {
         ...u,
         goles_local:     pron?.goles_local     ?? null,

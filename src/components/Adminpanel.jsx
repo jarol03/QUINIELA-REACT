@@ -9,6 +9,22 @@ import AdminFinalTab from "./AdminFinalTab";
 import RachaTab from "./RachaTab";
 import { useEffect } from "react";
 
+const PAGE_SIZE = 1000;
+async function fetchAllPaginated(queryFactory, pageSize = PAGE_SIZE) {
+  const allRows = [];
+  let from = 0;
+  while (true) {
+    const to = from + pageSize - 1;
+    const { data, error } = await queryFactory(from, to);
+    if (error) throw error;
+    const page = data || [];
+    allRows.push(...page);
+    if (page.length < pageSize) break;
+    from += pageSize;
+  }
+  return allRows;
+}
+
 const TABS = [
   { id: "home",     icon: "🏠",  label: "Inicio" },
   { id: "jornadas", icon: "🗓",  label: "Jornadas" },
@@ -553,13 +569,22 @@ function CopiarTab() {
 
   const loadJornada = async (j) => {
     setLoading(true); setSelectedJ(j); setUserIdx(0); setCopied(false); setSearch("");
-    const [{ data: pts }, { data: prons }, { data: usrs }] = await Promise.all([
-      supabase.from("partidos").select("*").eq("jornada_id", j.id).order("orden"),
-      supabase.from("pronosticos").select("*").eq("jornada_id", j.id),
-      supabase.from("usuarios").select("*").order("username"),
-    ]);
-    setPartidos(pts || []); setAllProns(prons || []); setUsuarios(usrs || []);
-    setLoading(false);
+    try {
+      const [ptsData, usrsData, pronsData] = await Promise.all([
+        supabase.from("partidos").select("*").eq("jornada_id", j.id).order("orden"),
+        supabase.from("usuarios").select("*").order("username"),
+        fetchAllPaginated((from, to) => 
+          supabase.from("pronosticos").select("*").eq("jornada_id", j.id).range(from, to)
+        )
+      ]);
+      setPartidos(ptsData.data || []);
+      setUsuarios(usrsData.data || []);
+      setAllProns(pronsData || []);
+    } catch (err) {
+      console.error("Error al cargar jornada:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredUsers = usuarios
@@ -567,12 +592,32 @@ function CopiarTab() {
     .sort((a, b) => sortAZ ? a.username.localeCompare(b.username) : b.username.localeCompare(a.username));
 
   const currentUser = filteredUsers[userIdx];
-  const countProns = (u) => partidos.filter(p => allProns.some(pr => pr.usuario_id === u.id && pr.partido_id === p.id && pr.goles_local !== null)).length;
+  const countProns = (u) => {
+    const uId = String(u.id).toLowerCase();
+    return partidos.filter(p => {
+      const pId = String(p.id).toLowerCase();
+      return allProns.some(pr => 
+        String(pr.usuario_id).toLowerCase() === uId && 
+        String(pr.partido_id).toLowerCase() === pId && 
+        pr.goles_local !== null
+      );
+    }).length;
+  };
 
   const handleCopy = () => {
     if (!currentUser) return;
+    const pronsMap = new Map();
+    allProns.forEach(pr => {
+      // Usamos lowercase para evitar errores de comparación de UUIDs
+      const uId = String(pr.usuario_id).toLowerCase();
+      const pId = String(pr.partido_id).toLowerCase();
+      pronsMap.set(`${uId}_${pId}`, pr);
+    });
+
     const text = partidos.map(p => {
-      const pron = allProns.find(pr => pr.usuario_id === currentUser.id && pr.partido_id === p.id);
+      const uSearch = String(currentUser.id).toLowerCase();
+      const pSearch = String(p.id).toLowerCase();
+      const pron = pronsMap.get(`${uSearch}_${pSearch}`);
       return `${pron?.goles_local ?? ""}\t${pron?.goles_visitante ?? ""}`;
     }).join("\n");
     navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
@@ -649,18 +694,29 @@ function CopiarTab() {
                   <table className="preview-table">
                     <thead><tr><th className="pt-num">#</th><th className="pt-partido">Partido</th><th className="pt-gol">Local</th><th className="pt-sep"></th><th className="pt-gol">Visit.</th></tr></thead>
                     <tbody>
-                      {partidos.map((p, i) => {
-                        const pron = allProns.find(pr => pr.usuario_id === currentUser.id && pr.partido_id === p.id);
-                        return (
-                          <tr key={p.id}>
-                            <td className="pt-num-cell">{i+1}</td>
-                            <td className="pt-partido">{p.equipo_local} <span className="pt-vs">vs</span> {p.equipo_visitante}</td>
-                            <td className={`pt-gol ${pron?.goles_local === null || pron?.goles_local === undefined ? "missing" : ""}`}>{pron?.goles_local ?? "—"}</td>
-                            <td className="pt-sep-cell">–</td>
-                            <td className={`pt-gol ${pron?.goles_visitante === null || pron?.goles_visitante === undefined ? "missing" : ""}`}>{pron?.goles_visitante ?? "—"}</td>
-                          </tr>
-                        );
-                      })}
+                      {(() => {
+                        const pMap = new Map();
+                        const cUserLower = String(currentUser.id).toLowerCase();
+                        allProns.forEach(pr => {
+                          if (String(pr.usuario_id).toLowerCase() === cUserLower) {
+                            pMap.set(String(pr.partido_id).toLowerCase(), pr);
+                          }
+                        });
+
+                        return partidos.map((p, i) => {
+                          const pIdLower = String(p.id).toLowerCase();
+                          const pron = pMap.get(pIdLower);
+                          return (
+                            <tr key={p.id}>
+                              <td className="pt-num-cell">{i+1}</td>
+                              <td className="pt-partido">{p.equipo_local} <span className="pt-vs">vs</span> {p.equipo_visitante}</td>
+                              <td className={`pt-gol ${pron?.goles_local === null || pron?.goles_local === undefined ? "missing" : ""}`}>{pron?.goles_local ?? "—"}</td>
+                              <td className="pt-sep-cell">–</td>
+                              <td className={`pt-gol ${pron?.goles_visitante === null || pron?.goles_visitante === undefined ? "missing" : ""}`}>{pron?.goles_visitante ?? "—"}</td>
+                            </tr>
+                          );
+                        });
+                      })()}
                     </tbody>
                   </table>
                 </div>

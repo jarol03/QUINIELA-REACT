@@ -317,87 +317,96 @@ export default function UserPanel({ user, onLogout }) {
   const handleSave = async () => {
     setSaving(true);
     const now = new Date();
-    const upserts = partidos
-      .filter(p => !p.fecha_limite || new Date(p.fecha_limite) > now)
-      .filter(p => {
-        const v = pronosticos[p.id];
-        return v?.local !== undefined && v?.local !== "" && v?.visitante !== undefined && v?.visitante !== "";
-      })
-      .map(p => ({
-        usuario_id: user.id, 
-        jornada_id: selectedJornada.id, 
-        partido_id: p.id,
-        goles_local: Number(pronosticos[p.id]?.local) || 0,
-        goles_visitante: Number(pronosticos[p.id]?.visitante) || 0,
-      }));
-
-    // ALERTA: Si el usuario intentó guardar algo pero el filtro de fecha_limite lo bloqueó
-    const intentadosIds = partidos
-      .filter(p => {
-        const v = pronosticos[p.id];
-        return v?.local !== undefined && v?.local !== "" && v?.visitante !== undefined && v?.visitante !== "";
-      })
-      .map(p => p.id);
-    
-    const bloqueados = intentadosIds.filter(id => !upserts.some(u => u.partido_id === id));
-    
-    if (bloqueados.length > 0) {
-      const partidosBloqueados = partidos.filter(p => bloqueados.includes(p.id));
-      const msg = `Intento de guardado en partido(s) CERRADO(S): ${partidosBloqueados.map(p => `${p.equipo_local} vs ${p.equipo_visitante}`).join(", ")}`;
-      console.warn("⚠️ " + msg);
-      if (window.__logAlert) {
-        window.__logAlert(msg, { 
-          jornada: selectedJornada.nombre, 
-          partidos: partidosBloqueados.map(p => ({ id: p.id, fecha: p.fecha_limite }))
-        });
-      }
-      showToast("Algunos partidos ya cerraron y no se guardaron.", "error");
-    }
-
-    if (!upserts.length) { 
-      showToast("No hay pronósticos abiertos.", "error"); 
-      setSaving(false); 
-      return; 
-    }
 
     try {
-      // Primero intentar delete de conflictos potenciales
-      const { error: deleteError } = await supabase
-        .from("pronosticos")
-        .delete()
-        .eq("usuario_id", user.id)
-        .eq("jornada_id", selectedJornada.id)
-        .in("partido_id", upserts.map(u => u.partido_id));
-
-      if (deleteError) {
-        console.warn("⚠️ Warning al limpiar pronósticos:", deleteError);
+      // 1. Identificar partidos abiertos
+      const openPartidos = partidos.filter(p => !p.fecha_limite || new Date(p.fecha_limite) > now);
+      
+      if (openPartidos.length === 0) {
+        showToast("Todos los partidos de esta jornada están cerrados.", "error");
+        setSaving(false);
+        return;
       }
 
-      // Ahora insertar sin conflictos
-      const { error } = await supabase
-        .from("pronosticos")
-        .insert(upserts);
+      // 2. Separar los que se van a INSERTAR de los que se van a LIMPIAR
+      const toInsert = [];
+      const toDeleteIds = [];
 
-      if (!error) { 
-        // Solo marcar como guardados los que realmente se procesaron
-        setSavedPronosticos(prev => {
-          const next = { ...prev };
-          upserts.forEach(u => {
-            next[u.partido_id] = { local: u.goles_local, visitante: u.goles_visitante };
+      openPartidos.forEach(p => {
+        const v = pronosticos[p.id];
+        const valLocal = String(v?.local ?? "").trim();
+        const valVisit = String(v?.visitante ?? "").trim();
+
+        if (valLocal !== "" && valVisit !== "") {
+          // Si está lleno, va para insert (y antes para delete para evitar duplicados)
+          toInsert.push({
+            usuario_id: user.id,
+            jornada_id: selectedJornada.id,
+            partido_id: p.id,
+            goles_local: parseInt(valLocal),
+            goles_visitante: parseInt(valVisit)
           });
-          return next;
-        });
-        showToast("¡Guardado!", "success"); 
-      } else {
-        console.error("❌ Error al guardar:", error);
-        showToast(`Error: ${error.message || "No se pudo guardar"}`, "error");
-      }
-    } catch (err) {
-      console.error("❌ Excepción al guardar:", err);
-      showToast("Error inesperado al guardar", "error");
-    }
+          toDeleteIds.push(p.id);
+        } else if (valLocal === "" && valVisit === "") {
+          // Si el usuario lo dejó totalmente vacío, lo marcamos para borrar por si había algo viejo
+          toDeleteIds.push(p.id);
+        }
+      });
 
-    setSaving(false);
+      // 3. Ejecutar cambios en la DB
+      if (toDeleteIds.length > 0) {
+        const { error: delErr } = await supabase
+          .from("pronosticos")
+          .delete()
+          .eq("usuario_id", user.id)
+          .in("partido_id", toDeleteIds);
+        if (delErr) throw delErr;
+      }
+
+      if (toInsert.length > 0) {
+        const { error: insErr } = await supabase
+          .from("pronosticos")
+          .insert(toInsert);
+        if (insErr) throw insErr;
+      }
+
+      // 4. Sincronizar UI
+      setSavedPronosticos(prev => {
+        const next = { ...prev };
+        toDeleteIds.forEach(id => {
+          const ins = toInsert.find(x => x.partido_id === id);
+          if (ins) {
+            next[id] = { local: ins.goles_local, visitante: ins.goles_visitante };
+          } else {
+            delete next[id]; // Se borró porque estaba vacío
+          }
+        });
+        return next;
+      });
+
+      // Alertas para los que no se pudieron guardar por estar incompletos (ej: solo local lleno)
+      const incompletos = openPartidos.filter(p => {
+        const v = pronosticos[p.id];
+        const l = String(v?.local ?? "").trim();
+        const vis = String(v?.visitante ?? "").trim();
+        return (l !== "" && vis === "") || (l === "" && vis !== "");
+      });
+
+      if (incompletos.length > 0) {
+        showToast(`Se guardaron ${toInsert.length} partidos. Pero ${incompletos.length} quedaron incompletos y no se guardaron.`, "error");
+      } else {
+        showToast(toInsert.length > 0 ? `¡${toInsert.length} pronósticos guardados!` : "Cambios guardados correctamente.", "success");
+      }
+
+    } catch (err) {
+      console.error("❌ Error en persistencia:", err);
+      if (window.__logAlert) {
+        window.__logAlert(`Error en handleSave: ${err.message || err}`, { stack: err.stack });
+      }
+      showToast("Error de conexión. Intenta de nuevo.", "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const showToast = (msg, type = "success") => {
