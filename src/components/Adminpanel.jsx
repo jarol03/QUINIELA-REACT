@@ -18,6 +18,7 @@ const TABS = [
   { id: "racha",    icon: "🔥",  label: "Racha" },
   { id: "copiar",   icon: "📋",  label: "Copiar" },
   { id: "pagos",    icon: "💰",  label: "Pagos" },
+  { id: "logs",     icon: "🚨",  label: "Logs" },
 ];
 
 const TAB_DESC = {
@@ -29,6 +30,7 @@ const TAB_DESC = {
   racha:    "Premio por 3 exactos seguidos",
   copiar:   "Exporta pronósticos a Excel",
   pagos:    "Control de pagos y recaudación",
+  logs:     "Errores de sistema y alertas",
 };
 
 export default function AdminPanel({ user, onLogout }) {
@@ -64,6 +66,7 @@ export default function AdminPanel({ user, onLogout }) {
         {tab === "racha"    && <RachaTab />}
         {tab === "copiar"   && <CopiarTab />}
         {tab === "pagos"    && <PagosTab />}
+        {tab === "logs"     && <LogsTab />}
       </div>
 
       {/* ── BOTTOM NAV ── */}
@@ -777,6 +780,100 @@ function PagosTab() {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function LogsTab() {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [usuarios, setUsuarios] = useState([]);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    const { data: usrs } = await supabase.from("usuarios").select("id, username, nombre");
+    const { data: logData } = await supabase
+      .from("error_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    
+    setUsuarios(usrs || []);
+    setLogs(logData || []);
+    setLoading(false);
+  };
+
+  const clearLogs = async () => {
+    if (!confirm("¿Eliminar todos los logs de la base de datos?")) return;
+    await supabase.from("error_logs").delete().neq("id", "00000000-0000-0000-0000-000000000000"); // deletes all
+    fetchData();
+  };
+
+  const formatTs = (ts) => {
+    return new Date(ts).toLocaleString("es-HN", {
+      day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit"
+    });
+  };
+
+  return (
+    <div className="logs-tab">
+      <div className="logs-header-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <h3 className="col-label" style={{ margin: 0 }}>Últimos 100 eventos</h3>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="admin-btn-primary" onClick={fetchData} style={{ padding: "8px 16px" }}>↻ Refrescar</button>
+          <button className="icon-btn danger" onClick={clearLogs} title="Limpiar todo">🗑 Limpiar</button>
+        </div>
+      </div>
+
+      {loading && <div className="loading-state"><div className="spinner" /></div>}
+
+      <div className="logs-list">
+        {logs.length === 0 && !loading && <p className="dim-text">No hay logs registrados.</p>}
+        {logs.map(l => {
+          const u = usuarios.find(x => x.id === l.usuario_id);
+          const isError = l.tipo === "JS_ERROR";
+          return (
+            <div key={l.id} className={`log-item ${isError ? "log-error" : "log-alert"}`} style={{ 
+              background: "rgba(255,255,255,0.03)", 
+              borderLeft: `4px solid ${isError ? "#ff4d4d" : "#ffcc00"}`,
+              padding: 12,
+              borderRadius: 6,
+              marginBottom: 8,
+              fontSize: 13
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                <span style={{ fontWeight: "bold", color: isError ? "#ff9991" : "#ffe066" }}>
+                  {isError ? "❌ ERROR " : "⚠️ ALERTA "} 
+                  · {u ? (u.nombre || u.username) : "Sistema"}
+                </span>
+                <span className="dim-text" style={{ fontSize: 11 }}>{formatTs(l.created_at)}</span>
+              </div>
+              <div style={{ color: "#eee", marginBottom: 6 }}>{l.mensaje}</div>
+              {l.info && (
+                <details style={{ cursor: "pointer" }}>
+                  <summary style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>Ver detalles técnicos</summary>
+                  <pre style={{ 
+                    fontSize: 10, 
+                    background: "#000", 
+                    padding: 8, 
+                    borderRadius: 4, 
+                    marginTop: 4, 
+                    overflowX: "auto",
+                    color: "#88ea88"
+                  }}>
+                    {JSON.stringify(l.info, null, 2)}
+                    {l.stack && `\n\nStack:\n${l.stack}`}
+                  </pre>
+                </details>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

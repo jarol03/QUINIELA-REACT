@@ -125,17 +125,44 @@ export default function UserPanel({ user, onLogout }) {
 
   const debugLog = useRef([]);
 
-  // Debug listener
+  // Debug listener persistente
   useEffect(() => {
+    const logRemote = async (entry) => {
+      try {
+        await supabase.from("error_logs").insert({
+          usuario_id: user.id,
+          tipo: entry.type,
+          mensaje: entry.msg,
+          stack: entry.stack || null,
+          info: { 
+            ua: navigator.userAgent, 
+            url: window.location.href,
+            ...entry.extra 
+          }
+        });
+      } catch (e) {
+        console.warn("No se pudo enviar el log a Supabase", e);
+      }
+    };
+
     const handleError = (e) => {
-      const entry = { type: "JS_ERROR", msg: e.message, time: new Date().toISOString() };
+      const entry = { 
+        type: "JS_ERROR", 
+        msg: e.message, 
+        stack: e.error?.stack,
+        time: new Date().toISOString() 
+      };
       debugLog.current.push(entry);
       console.error("[QUINIELA DEBUG]", entry);
+      logRemote(entry);
     };
+
     window.addEventListener("error", handleError);
     window.__quinielaDebug = () => { console.table(debugLog.current); return debugLog.current; };
+    window.__logAlert = (msg, extra) => logRemote({ type: "SAVE_ALERT", msg, extra });
+
     return () => window.removeEventListener("error", handleError);
-  }, []);
+  }, [user.id]);
 
   // Hooks se movieron abajo para evitar ReferenceError
 
@@ -304,6 +331,29 @@ export default function UserPanel({ user, onLogout }) {
         goles_visitante: Number(pronosticos[p.id]?.visitante) || 0,
       }));
 
+    // ALERTA: Si el usuario intentó guardar algo pero el filtro de fecha_limite lo bloqueó
+    const intentadosIds = partidos
+      .filter(p => {
+        const v = pronosticos[p.id];
+        return v?.local !== undefined && v?.local !== "" && v?.visitante !== undefined && v?.visitante !== "";
+      })
+      .map(p => p.id);
+    
+    const bloqueados = intentadosIds.filter(id => !upserts.some(u => u.partido_id === id));
+    
+    if (bloqueados.length > 0) {
+      const partidosBloqueados = partidos.filter(p => bloqueados.includes(p.id));
+      const msg = `Intento de guardado en partido(s) CERRADO(S): ${partidosBloqueados.map(p => `${p.equipo_local} vs ${p.equipo_visitante}`).join(", ")}`;
+      console.warn("⚠️ " + msg);
+      if (window.__logAlert) {
+        window.__logAlert(msg, { 
+          jornada: selectedJornada.nombre, 
+          partidos: partidosBloqueados.map(p => ({ id: p.id, fecha: p.fecha_limite }))
+        });
+      }
+      showToast("Algunos partidos ya cerraron y no se guardaron.", "error");
+    }
+
     if (!upserts.length) { 
       showToast("No hay pronósticos abiertos.", "error"); 
       setSaving(false); 
@@ -329,7 +379,14 @@ export default function UserPanel({ user, onLogout }) {
         .insert(upserts);
 
       if (!error) { 
-        setSavedPronosticos({ ...pronosticos }); 
+        // Solo marcar como guardados los que realmente se procesaron
+        setSavedPronosticos(prev => {
+          const next = { ...prev };
+          upserts.forEach(u => {
+            next[u.partido_id] = { local: u.goles_local, visitante: u.goles_visitante };
+          });
+          return next;
+        });
         showToast("¡Guardado!", "success"); 
       } else {
         console.error("❌ Error al guardar:", error);
