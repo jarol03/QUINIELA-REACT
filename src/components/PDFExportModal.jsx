@@ -356,15 +356,40 @@ export default function PDFExportModal({
         align: "right",
       });
 
-      doc.setFillColor(0, 180, 120);
-      doc.rect(0, H - 1.5, W, 1.5, "F");
+      // --- FINALIZAR Y DESCARGAR ---
+      // Sanitizar el nombre del archivo de forma estricta para Chrome
+      const safeTitle = (title || "export")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Elimina acentos
+        .replace(/[^a-z0-9]/gi, "-")     // Solo letras, números y guiones
+        .replace(/-+/g, "-")             // Evita múltiples guiones
+        .toLowerCase();
+        
+      const fileName = `${type === "puntos" ? "Ranking" : "previa"}-${safeTitle}.pdf`;
 
-      const fileName = `${type === "puntos" ? "Ranking" : "previa"}-${(title || "export").replace(/\s+/g, "-").toLowerCase()}.pdf`;
-      doc.save(fileName);
+      // Método robusto para Chrome (Manual Blob + Delay)
+      const blob = doc.output("blob");
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      
+      link.href = url;
+      link.download = fileName;
+      link.style.display = "none";
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      // Limpieza con retraso para dar tiempo a que Chrome procese el archivo
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 60000); // 1 minuto de vida para la URL temporal
+
     } catch (err) {
       console.error("Error generando PDF:", err);
+    } finally {
+      setGenerating(false);
     }
-    setGenerating(false);
   };
 
   return createPortal(
