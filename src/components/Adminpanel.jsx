@@ -10,6 +10,7 @@ import RachaTab from "./RachaTab";
 import { useEffect } from "react";
 
 const TABS = [
+  { id: "home",     icon: "🏠",  label: "Inicio" },
   { id: "jornadas", icon: "🗓",  label: "Jornadas" },
   { id: "usuarios", icon: "👥",  label: "Jugadores" },
   { id: "puntos",   icon: "🏆",  label: "Puntos" },
@@ -21,7 +22,10 @@ const TABS = [
   { id: "logs",     icon: "🚨",  label: "Logs" },
 ];
 
+const BOTTOM_TABS = ["home", "jornadas", "puntos", "previas", "copiar"];
+
 const TAB_DESC = {
+  home:     "Panel central de administración",
   jornadas: "Gestiona jornadas y partidos",
   usuarios: "Administra los participantes",
   puntos:   "Tabla de posiciones",
@@ -34,7 +38,7 @@ const TAB_DESC = {
 };
 
 export default function AdminPanel({ user, onLogout }) {
-  const [tab, setTab] = useState("jornadas");
+  const [tab, setTab] = useState("home");
 
   return (
     <div className="admin-app">
@@ -58,6 +62,7 @@ export default function AdminPanel({ user, onLogout }) {
 
       {/* ── CONTENT ── */}
       <div className="admin-app-content">
+        {tab === "home"     && <DashboardTab setTab={setTab} />}
         {tab === "jornadas" && <JornadasTab />}
         {tab === "usuarios" && <UsuariosTab />}
         {tab === "puntos"   && <PuntosTab />}
@@ -71,7 +76,7 @@ export default function AdminPanel({ user, onLogout }) {
 
       {/* ── BOTTOM NAV ── */}
       <nav className="admin-bottom-nav">
-        {TABS.map(t => (
+        {TABS.filter(t => BOTTOM_TABS.includes(t.id)).map(t => (
           <button
             key={t.id}
             className={`admin-bn-item ${tab === t.id ? "active" : ""}`}
@@ -86,6 +91,34 @@ export default function AdminPanel({ user, onLogout }) {
   );
 }
 
+
+/* ═══════════════════════════════════════
+   TAB: DASHBOARD (HOME)
+═══════════════════════════════════════ */
+function DashboardTab({ setTab }) {
+  // Excluimos "home" de las tarjetas porque ya estamos aquí
+  const menuItems = TABS.filter(t => t.id !== "home");
+
+  return (
+    <div className="dashboard-grid">
+      {menuItems.map((item, idx) => (
+        <button 
+          key={item.id} 
+          className="menu-card" 
+          onClick={() => setTab(item.id)}
+          style={{ animationDelay: `${idx * 0.05}s` }}
+        >
+          <div className="menu-card-icon">{item.icon}</div>
+          <div className="menu-card-info">
+            <span className="menu-card-label">{item.label}</span>
+            <span className="menu-card-desc">{TAB_DESC[item.id]}</span>
+          </div>
+          <div className="menu-card-arrow">→</div>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /* ═══════════════════════════════════════
    TAB: JORNADAS
