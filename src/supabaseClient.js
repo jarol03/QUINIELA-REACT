@@ -1,8 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
+// import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@insforge/sdk";
 
 // 🔧 Reemplaza con los valores de tu proyecto (Settings > API)
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL = import.meta.env.VITE_INSFORGE_URL || import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_INSFORGE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // 🔧 Username del admin (el que pones en el login)
 export const ADMIN_USERNAME = "luis02";
@@ -11,7 +12,35 @@ export const ADMIN_USERNAME = "luis02";
 // Esta contraseña solo la sabe el admin, los participantes no tienen contraseña
 export const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const insforgeSdk = createClient({ baseUrl: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY });
+
+// Wrapper de compatibilidad para código existente de Supabase
+export const supabase = {
+  get from() {
+    return (table) => {
+      const tableRef = insforgeSdk.database.from(table);
+      return new Proxy(tableRef, {
+        get(target, prop) {
+          if (prop === 'insert') {
+            return (data, ...args) => target.insert(Array.isArray(data) ? data : [data], ...args);
+          }
+          const val = target[prop];
+          return typeof val === 'function' ? val.bind(target) : val;
+        }
+      });
+    };
+  },
+  get rpc() {
+    return insforgeSdk.database.rpc.bind(insforgeSdk.database);
+  },
+  get auth() {
+    return insforgeSdk.auth;
+  },
+  get storage() {
+    return insforgeSdk.storage;
+  }
+};
 
 // ── Helpers de sesión ─────────────────────────────────────────────────────
 
