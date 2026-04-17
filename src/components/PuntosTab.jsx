@@ -94,18 +94,33 @@ export default function PuntosTab() {
   };
 
   const loadJornada = async (j) => {
-    setLoading(true); setSelectedJ(j); setEditRes({}); setEditingIds(new Set());
-    const [{ data: pts }, { data: prons }, { data: usrs }] = await Promise.all([
+  setLoading(true); setSelectedJ(j); setEditRes({}); setEditingIds(new Set());
+  
+  try {
+    const [ptsRes, usrsRes] = await Promise.all([
       supabase.from("partidos").select("*").eq("jornada_id", j.id).order("orden"),
-      supabase.from("pronosticos").select("*").eq("jornada_id", j.id),
       supabase.from("usuarios").select("*").order("username"),
     ]);
-    setPartidos(pts || []); setAllProns(prons || []); setUsuarios(usrs || []);
-    const resMap = {};
-    (pts || []).forEach(p => { resMap[p.id] = { local: p.goles_local_real ?? "", visitante: p.goles_visitante_real ?? "" }; });
-    setEditRes(resMap);
+
+    // USA AQUÍ LA FUNCIÓN PAGINADA PARA TRAER TODOS LOS PRONÓSTICOS
+    const prons = await fetchAllPaginated((from, to) => 
+      supabase.from("pronosticos")
+        .select("*")
+        .eq("jornada_id", j.id)
+        .range(from, to)
+    );
+
+    setPartidos(ptsRes.data || []); 
+    setAllProns(prons || []); 
+    setUsuarios(usrsRes.data || []);
+    
+    // ... resto de tu lógica de resMap
+  } catch (error) {
+    console.error("Error cargando jornada:", error);
+  } finally {
     setLoading(false);
-  };
+  }
+};
 
   // ── Cargar ranking global ──────────────────────────────────────────────
   const loadGlobal = async () => {
