@@ -2,17 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabaseClient";
 import PDFExportModal from "./PDFExportModal";
 
-function calcPuntos(pron, partido) {
-  if (!partido || pron?.goles_local === null || pron?.goles_local === undefined) return null;
-  if (partido.goles_local_real === null || partido.goles_local_real === undefined) return null;
-  const gl = Number(pron.goles_local),  gv = Number(pron.goles_visitante);
-  const rl = Number(partido.goles_local_real), rv = Number(partido.goles_visitante_real);
-  if (gl === rl && gv === rv) return 3;
-  const resPron = gl > gv ? "L" : gl < gv ? "V" : "E";
-  const resReal = rl > rv ? "L" : rl < rv ? "V" : "E";
-  return resPron === resReal ? 1 : 0;
-}
-
 const PAGE_SIZE = 1000;
 
 async function fetchAllPaginated(queryFactory, pageSize = PAGE_SIZE) {
@@ -30,23 +19,6 @@ async function fetchAllPaginated(queryFactory, pageSize = PAGE_SIZE) {
   return allRows;
 }
 
-function safeTs(iso) {
-  if (!iso) return 0;
-  const ts = new Date(iso).getTime();
-  return Number.isNaN(ts) ? 0 : ts;
-}
-
-function buildPronosticosIndex(pronosticos) {
-  const index = new Map();
-  (pronosticos || []).forEach((pr) => {
-    const key = `${pr.usuario_id}|${pr.partido_id}`;
-    const prev = index.get(key);
-    if (!prev || safeTs(pr.created_at) >= safeTs(prev.created_at)) {
-      index.set(key, pr);
-    }
-  });
-  return index;
-}
 
 function addPos(arr) {
   // Empate = mismos puntos (sin importar exactos ni resultados)
@@ -71,7 +43,7 @@ export default function PuntosTab() {
   const [selectedJ,   setSelectedJ]   = useState(null);
   const [usuarios,    setUsuarios]    = useState([]);
   const [partidos,    setPartidos]    = useState([]);
-  const [allProns,    setAllProns]    = useState([]);
+  const [rankingJornadaData, setRankingJornadaData] = useState([]);
   const [loading,     setLoading]     = useState(false);
   const [saving,      setSaving]      = useState(null);
   const [toast,       setToast]       = useState("");
@@ -95,26 +67,18 @@ export default function PuntosTab() {
 
   const loadJornada = async (j) => {
   setLoading(true); setSelectedJ(j); setEditRes({}); setEditingIds(new Set());
+  setRankingJornadaData([]);
   
   try {
-    const [ptsRes, usrsRes] = await Promise.all([
+    const [ptsRes, usrsRes, rankingRes] = await Promise.all([
       supabase.from("partidos").select("*").eq("jornada_id", j.id).order("orden"),
       supabase.from("usuarios").select("*").order("username"),
+      supabase.from("ranking_jornada_view").select("*").eq("jornada_id", j.id),
     ]);
 
-    // USA AQUÍ LA FUNCIÓN PAGINADA PARA TRAER TODOS LOS PRONÓSTICOS
-    const prons = await fetchAllPaginated((from, to) => 
-      supabase.from("pronosticos")
-        .select("*")
-        .eq("jornada_id", j.id)
-        .range(from, to)
-    );
-
     setPartidos(ptsRes.data || []); 
-    setAllProns(prons || []); 
     setUsuarios(usrsRes.data || []);
-    
-    // ... resto de tu lógica de resMap
+    setRankingJornadaData(rankingRes.data || []);
   } catch (error) {
     console.error("Error cargando jornada:", error);
   } finally {
@@ -210,18 +174,25 @@ export default function PuntosTab() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
-  const pronIndexJornada = buildPronosticosIndex(allProns);
+  const rankMapJornada = {};
+  (rankingJornadaData || []).forEach((row) => {
+    rankMapJornada[row.usuario_id] = {
+      pts: row.pts || 0,
+      exactos: row.exactos || 0,
+      resultados: row.resultados || 0,
+    };
+  });
 
-  const tablaJornada = addPos(usuarios.map(u => {
-    let pts = 0, exactos = 0, resultados = 0;
-    partidos.forEach(p => {
-      const pron = pronIndexJornada.get(`${u.id}|${p.id}`);
-      const puntos = calcPuntos(pron, p);
-      if (puntos === 3) { pts += 3; exactos++; }
-      else if (puntos === 1) { pts += 1; resultados++; }
-    });
-    return { ...u, pts, exactos, resultados };
-  }).sort((a, b) => b.pts - a.pts));
+  const tablaJornada = addPos(
+    usuarios
+      .map((u) => ({
+        ...u,
+        pts: rankMapJornada[u.id]?.pts || 0,
+        exactos: rankMapJornada[u.id]?.exactos || 0,
+        resultados: rankMapJornada[u.id]?.resultados || 0,
+      }))
+      .sort((a, b) => b.pts - a.pts)
+  );
 
   const pdfDataJornada = tablaJornada.map(u => ({
     nombre: u.nombre || u.username, username: u.username,
