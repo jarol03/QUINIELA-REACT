@@ -7,9 +7,18 @@ import RachaView from "./RachaView";
 import RankingJornada from "./RankingJornada";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
+function safeDate(isoStr) {
+  if (!isoStr) return null;
+  const s = String(isoStr).trim().replace(' ', 'T');
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 function isPartidoClosed(partido) {
   if (!partido?.fecha_limite) return false;
-  return new Date() > new Date(partido.fecha_limite);
+  const d = safeDate(partido.fecha_limite);
+  if (!d) return false; // Fail open for unparseable dates
+  return new Date() > d;
 }
 
 function jornadaStatus(partidos) {
@@ -24,7 +33,9 @@ function jornadaStatus(partidos) {
 
 function fmtFecha(iso) {
   if (!iso) return "";
-  return new Date(iso).toLocaleString("es-HN", {
+  const d = safeDate(iso);
+  if (!d) return "Fecha inválida";
+  return d.toLocaleString("es-HN", {
     day: "2-digit", month: "2-digit",
     hour: "2-digit", minute: "2-digit", hour12: true,
   });
@@ -310,7 +321,7 @@ export default function UserPanel({ user, onLogout }) {
   };
 
   const handleChange = useCallback((partidoId, team, value) => {
-    const val = value === "" ? "" : Math.max(0, parseInt(value) || 0);
+    const val = value === "" ? "" : Math.max(0, parseInt(value, 10) || 0);
     setPronosticos(prev => ({ ...prev, [partidoId]: { ...prev[partidoId], [team]: val } }));
   }, []);
 
@@ -319,8 +330,8 @@ export default function UserPanel({ user, onLogout }) {
     const now = new Date();
 
     try {
-      // 1. Identificar partidos abiertos
-      const openPartidos = partidos.filter(p => !p.fecha_limite || new Date(p.fecha_limite) > now);
+      // 1. Identificar partidos abiertos unificadamente con isPartidoClosed
+      const openPartidos = partidos.filter(p => !isPartidoClosed(p));
       
       if (openPartidos.length === 0) {
         showToast("Todos los partidos de esta jornada están cerrados.", "error");
@@ -343,8 +354,8 @@ export default function UserPanel({ user, onLogout }) {
             usuario_id: user.id,
             jornada_id: selectedJornada.id,
             partido_id: p.id,
-            goles_local: parseInt(valLocal),
-            goles_visitante: parseInt(valVisit)
+            goles_local: parseInt(valLocal, 10),
+            goles_visitante: parseInt(valVisit, 10)
           });
           toDeleteIds.push(p.id);
         } else if (valLocal === "" && valVisit === "") {
