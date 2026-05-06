@@ -149,6 +149,10 @@ function JornadasTab() {
   const [newPartidoFecha, setNewPartidoFecha] = useState("");
   const [creating,      setCreating]      = useState(false);
   const [toast,         setToast]         = useState("");
+  const [editPartidoId, setEditPartidoId] = useState(null);
+  const [editPartidoLocal, setEditPartidoLocal] = useState("");
+  const [editPartidoVisitante, setEditPartidoVisitante] = useState("");
+  const [savingPartidoEdit, setSavingPartidoEdit] = useState(false);
   // Edición de fecha por partido
   const [editFechaPartidoId, setEditFechaPartidoId] = useState(null);
   const [editFechaPartidoVal, setEditFechaPartidoVal] = useState("");
@@ -213,6 +217,41 @@ function JornadasTab() {
     await supabase.from("pronosticos").delete().eq("partido_id", id);
     await supabase.from("partidos").delete().eq("id", id);
     fetchPartidos(selectedJ.id);
+  };
+
+  const startEditPartido = (p) => {
+    setEditPartidoId(p.id);
+    setEditPartidoLocal(p.equipo_local || "");
+    setEditPartidoVisitante(p.equipo_visitante || "");
+  };
+
+  const cancelEditPartido = () => {
+    setEditPartidoId(null);
+    setEditPartidoLocal("");
+    setEditPartidoVisitante("");
+  };
+
+  const savePartidoEdit = async (id) => {
+    const local = editPartidoLocal.trim();
+    const visitante = editPartidoVisitante.trim();
+    if (!local || !visitante) {
+      showToast("Ambos nombres de equipo son obligatorios.");
+      return;
+    }
+    setSavingPartidoEdit(true);
+    const { error } = await supabase
+      .from("partidos")
+      .update({ equipo_local: local, equipo_visitante: visitante })
+      .eq("id", id);
+
+    if (!error) {
+      cancelEditPartido();
+      fetchPartidos(selectedJ.id);
+      showToast("Partido actualizado ✓");
+    } else {
+      showToast("Error al actualizar el partido.");
+    }
+    setSavingPartidoEdit(false);
   };
 
   const startEditFechaPartido = (p) => {
@@ -314,16 +353,50 @@ function JornadasTab() {
                   {partidos.map((p, i) => {
                     const isClosed = p.fecha_limite && new Date() > new Date(p.fecha_limite);
                     const isEditingFecha = editFechaPartidoId === p.id;
+                    const isEditingPartido = editPartidoId === p.id;
                     return (
                       <div key={p.id} className={`partido-item-admin ${isClosed ? "partido-item-closed" : ""}`}>
                         <div className="partido-item-top">
                           <span className="partido-item-num">{i + 1}</span>
-                          <div className="partido-item-teams">
-                            <span className="pit-team">{p.equipo_local}</span>
-                            <span className="pit-vs">vs</span>
-                            <span className="pit-team">{p.equipo_visitante}</span>
+                          {isEditingPartido ? (
+                            <div className="partido-item-teams" style={{ gap: 8, flexWrap: "wrap" }}>
+                              <input
+                                className="admin-input admin-input-sm"
+                                value={editPartidoLocal}
+                                onChange={e => setEditPartidoLocal(e.target.value)}
+                                placeholder="Equipo local"
+                                autoFocus
+                              />
+                              <span className="pit-vs">vs</span>
+                              <input
+                                className="admin-input admin-input-sm"
+                                value={editPartidoVisitante}
+                                onChange={e => setEditPartidoVisitante(e.target.value)}
+                                placeholder="Equipo visitante"
+                              />
+                            </div>
+                          ) : (
+                            <div className="partido-item-teams">
+                              <span className="pit-team">{p.equipo_local}</span>
+                              <span className="pit-vs">vs</span>
+                              <span className="pit-team">{p.equipo_visitante}</span>
+                            </div>
+                          )}
+                          <div style={{ display: "flex", gap: 8 }}>
+                            {isEditingPartido ? (
+                              <>
+                                <button className="fecha-save-btn" onClick={() => savePartidoEdit(p.id)} disabled={savingPartidoEdit}>
+                                  {savingPartidoEdit ? "..." : "Guardar"}
+                                </button>
+                                <button className="fecha-cancel-btn" onClick={cancelEditPartido}>✕</button>
+                              </>
+                            ) : (
+                              <>
+                                <button className="icon-btn" onClick={() => startEditPartido(p)} title="Editar nombre del partido">✏️</button>
+                                <button className="icon-btn danger" onClick={() => deletePartido(p.id)}>🗑</button>
+                              </>
+                            )}
                           </div>
-                          <button className="icon-btn danger" onClick={() => deletePartido(p.id)}>🗑</button>
                         </div>
                         {/* Fecha límite por partido */}
                         <div className="partido-item-fecha" onClick={e => e.stopPropagation()}>

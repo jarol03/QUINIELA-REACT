@@ -433,7 +433,7 @@
   gap: 3px;
   background: transparent;
   border: none;
-  color: var(--text-dimmer);
+  color: var(--text);
   cursor: pointer;
   padding: 10px 8px 8px;
   transition: color 0.2s;
@@ -441,7 +441,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 .ubn-item:active { opacity: 0.7; }
-.ubn-item.active { color: var(--accent); }
+.ubn-item.active { color: var(--text); }
 
 .ubn-icon  { font-size: 22px; line-height: 1; }
 .ubn-label { font-size: 10px; font-weight: 600; letter-spacing: 0.3px; }
@@ -826,12 +826,12 @@
 .rk-subtab {
   background: transparent; border: none;
   border-bottom: 2px solid transparent;
-  color: var(--text-dimmer); cursor: pointer;
+  color: var(--text); cursor: pointer;
   font-family: 'Outfit',sans-serif; font-size: 14px; font-weight: 600;
   padding: 8px 16px; transition: all 0.2s; margin-bottom: -1px;
   -webkit-tap-highlight-color: transparent;
 }
-.rk-subtab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.rk-subtab.active { color: var(--text); border-bottom-color: var(--accent); }
 
 /* ═══════════════════════════════════════
    RANKING POR JORNADA
