@@ -409,7 +409,7 @@ export default function PDFExportModal({
             <div className="pdfm-field">
               <label className="pdfm-label">Número de columnas</label>
               <div className="pdfm-cols-btns">
-                {[3, 4, 5].map((n) => (
+                {[2, 3, 4, 5].map((n) => (
                   <button
                     key={n}
                     className={`pdfm-col-btn ${cols === n ? "active" : ""}`}
