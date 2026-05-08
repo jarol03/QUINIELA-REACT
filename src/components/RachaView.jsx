@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
-import { calcularRachas, fetchAllPaginated } from "./rachaUtils";
+import { calcularRachas, fetchAllPaginated, fmtFecha } from "./rachaUtils";
 import { RachaRow } from "./RachaTab";
 
 export default function RachaView({ user }) {
@@ -75,13 +75,32 @@ export default function RachaView({ user }) {
 
           {/* Ganadores */}
           {ganadores.length > 0 && (
-            <div className="racha-ganadores-user">
-              <span className="rgu-label">🏆 Premio ganado por</span>
-              {ganadores.map(({ u }) => (
-                <div key={u.id} className="rgu-row">
-                  <div className="rgu-avatar">{(u.nombre || u.username).charAt(0).toUpperCase()}</div>
-                  <span className="rgu-nombre">{u.nombre || u.username}</span>
-                  <span className="rgu-badge">🏆</span>
+            <div className="racha-ganadores-card">
+              <div className="rgc-title">🏆 Ganador{ganadores.length !== 1 ? "es" : ""} del premio</div>
+              {ganadores.map(({ u, primeraRacha }) => (
+                <div key={u.id}>
+                  <div className="rgc-ganador">
+                    <div className="rgc-avatar">{(u.nombre || u.username).charAt(0).toUpperCase()}</div>
+                    <div className="rgc-info">
+                      <span className="rgc-nombre">{u.nombre || u.username}</span>
+                      <span className="rgc-sub">3 exactos consecutivos · ya no compite</span>
+                    </div>
+                    <span className="rgc-trophy">🏆</span>
+                  </div>
+                  <div className="rgc-detalle">
+                    <span className="rgc-det-label">Su racha ganadora:</span>
+                    {primeraRacha.map((p, i) => (
+                      <div key={p.id} className="rgc-partido">
+                        <span className="rgc-p-num">{i + 1}</span>
+                        <div className="rgc-p-info">
+                          <span className="rgc-p-teams">{p.equipo_local} vs {p.equipo_visitante}</span>
+                          <span className="rgc-p-fecha">{fmtFecha(p.fecha_limite)}</span>
+                        </div>
+                        <span className="rgc-p-score">{p.goles_local_real}–{p.goles_visitante_real}</span>
+                        <span className="rgc-p-badge">🎯 +3</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
