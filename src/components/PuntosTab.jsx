@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabaseClient";
 import PDFExportModal from "./PDFExportModal";
+import { ordenarPartidosPorFecha } from "./rachaUtils";
 
 const PAGE_SIZE = 1000;
 
@@ -76,7 +77,7 @@ export default function PuntosTab() {
       supabase.from("ranking_jornada_view").select("*").eq("jornada_id", j.id),
     ]);
 
-    setPartidos(ptsRes.data || []); 
+    setPartidos(ordenarPartidosPorFecha(ptsRes.data || []));
     setUsuarios(usrsRes.data || []);
     setRankingJornadaData(rankingRes.data || []);
   } catch (error) {
@@ -152,7 +153,7 @@ export default function PuntosTab() {
     setSaving(partidoId);
     await supabase.from("partidos").update({ goles_local_real: Number(r.local), goles_visitante_real: Number(r.visitante) }).eq("id", partidoId);
     const { data } = await supabase.from("partidos").select("*").eq("jornada_id", selectedJ.id).order("orden");
-    setPartidos(data || []);
+    setPartidos(ordenarPartidosPorFecha(data || []));
     setEditingIds(prev => { const s = new Set(prev); s.delete(partidoId); return s; });
     setSaving(null);
     showToast("Resultado guardado ✓");
@@ -164,7 +165,7 @@ export default function PuntosTab() {
     setEditRes(prev => ({ ...prev, [partidoId]: { local: "", visitante: "" } }));
     setEditingIds(prev => { const s = new Set(prev); s.delete(partidoId); return s; });
     const { data } = await supabase.from("partidos").select("*").eq("jornada_id", selectedJ.id).order("orden");
-    setPartidos(data || []);
+    setPartidos(ordenarPartidosPorFecha(data || []));
     showToast("Resultado eliminado");
   };
 

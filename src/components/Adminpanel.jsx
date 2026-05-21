@@ -7,6 +7,7 @@ import PuntosTab from "./PuntosTab";
 import PreviasTab from "./PreviasTab";
 import AdminFinalTab from "./AdminFinalTab";
 import RachaTab from "./RachaTab";
+import { ordenarPartidosPorFecha, sincronizarOrdenPartidosJornada } from "./rachaUtils";
 import { useEffect } from "react";
 
 const PAGE_SIZE = 1000;
@@ -166,7 +167,7 @@ function JornadasTab() {
 
   const fetchPartidos = async (id) => {
     const { data } = await supabase.from("partidos").select("*").eq("jornada_id", id).order("orden");
-    setPartidos(data || []);
+    setPartidos(ordenarPartidosPorFecha(data || []));
   };
 
   const createJornada = async () => {
@@ -208,6 +209,7 @@ function JornadasTab() {
       orden:            partidos.length + 1,
       fecha_limite:     newPartidoFecha || null,
     });
+    await sincronizarOrdenPartidosJornada(supabase, selectedJ.id);
     setNewLocal(""); setNewVisitante(""); setNewPartidoFecha("");
     fetchPartidos(selectedJ.id);
     showToast("Partido agregado ✓");
@@ -261,6 +263,7 @@ function JornadasTab() {
 
   const saveFechaPartido = async (id) => {
     await supabase.from("partidos").update({ fecha_limite: editFechaPartidoVal || null }).eq("id", id);
+    await sincronizarOrdenPartidosJornada(supabase, selectedJ.id);
     setEditFechaPartidoId(null);
     fetchPartidos(selectedJ.id);
     showToast("Fecha del partido actualizada ✓");

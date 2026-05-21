@@ -45,16 +45,44 @@ export function fmtFecha(iso) {
   });
 }
 
+// Orden de visualización: fecha_limite ASC; sin fecha al final; empate por orden actual.
+export function ordenarPartidosPorFecha(partidos) {
+  return [...partidos].sort((a, b) => {
+    if (!a.fecha_limite && !b.fecha_limite) return (a.orden ?? 0) - (b.orden ?? 0);
+    if (!a.fecha_limite) return 1;
+    if (!b.fecha_limite) return -1;
+    const diff = new Date(a.fecha_limite) - new Date(b.fecha_limite);
+    if (diff !== 0) return diff;
+    return (a.orden ?? 0) - (b.orden ?? 0);
+  });
+}
+
+// Persiste en BD el orden según fecha_limite (p. ej. tras cambiar fecha en admin).
+export async function sincronizarOrdenPartidosJornada(supabase, jornadaId) {
+  const { data, error } = await supabase
+    .from("partidos")
+    .select("id, fecha_limite, orden")
+    .eq("jornada_id", jornadaId);
+  if (error || !data?.length) return { error };
+
+  const sorted = ordenarPartidosPorFecha(data);
+  const updates = sorted
+    .map((p, i) => ({ id: p.id, orden: i + 1, prev: p.orden }))
+    .filter((x) => x.prev !== x.orden);
+
+  if (updates.length > 0) {
+    await Promise.all(
+      updates.map(({ id, orden }) =>
+        supabase.from("partidos").update({ orden }).eq("id", id)
+      )
+    );
+  }
+  return { error: null };
+}
+
 // Ordena partidos con resultado por fecha_limite ASC (sin fecha van al final)
 export function ordenarPartidos(partidos) {
-  return [...partidos]
-    .filter(p => p.goles_local_real != null)
-    .sort((a, b) => {
-      if (!a.fecha_limite && !b.fecha_limite) return 0;
-      if (!a.fecha_limite) return 1;
-      if (!b.fecha_limite) return -1;
-      return new Date(a.fecha_limite) - new Date(b.fecha_limite);
-    });
+  return ordenarPartidosPorFecha(partidos).filter(p => p.goles_local_real != null);
 }
 
 // Agrupa partidos por fecha_limite (mismo timestamp = simultáneos).

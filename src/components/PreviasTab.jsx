@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "../supabaseClient";
 import PDFExportModal from "./PDFExportModal";
+import { ordenarPartidosPorFecha } from "./rachaUtils";
 
 const PAGE_SIZE = 1000;
 async function fetchAllPaginated(queryFactory, pageSize = PAGE_SIZE) {
@@ -68,7 +69,7 @@ export default function PreviasTab() {
           supabase.from("pronosticos").select("*").eq("jornada_id", j.id).range(from, to)
         ),
       ]);
-      setPartidos(ptsData.data || []);
+      setPartidos(ordenarPartidosPorFecha(ptsData.data || []));
       setUsuarios(usrsData.data || []);
       setAllProns(pronsData || []);
       setVista("partidos");

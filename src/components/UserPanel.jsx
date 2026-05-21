@@ -5,6 +5,7 @@ import "../styles/user.css";
 import FinalTab from "./FinalTab";
 import RachaView from "./RachaView";
 import RankingJornada from "./RankingJornada";
+import { ordenarPartidosPorFecha } from "./rachaUtils";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function safeDate(isoStr) {
@@ -310,7 +311,7 @@ export default function UserPanel({ user, onLogout }) {
 
     const { data: pts } = await supabase.from("partidos").select("*")
       .eq("jornada_id", jornada.id).order("orden");
-    setPartidos(pts || []);
+    setPartidos(ordenarPartidosPorFecha(pts || []));
 
     const { data: prons } = await supabase.from("pronosticos").select("*")
       .eq("jornada_id", jornada.id).eq("usuario_id", user.id);
@@ -632,7 +633,7 @@ export default function UserPanel({ user, onLogout }) {
                     const maxPts    = Math.max(...ranking.map(u => u.porJornada?.[j.id] ?? 0), 1);
                     const pct       = Math.round((jPts / maxPts) * 100);
                     const expanded  = jornadaExpandida === j.id;
-                    const ptsDej    = allPartidos.filter(p => p.jornada_id === j.id && p.goles_local_real != null).sort((a,b) => a.orden - b.orden);
+                    const ptsDej    = ordenarPartidosPorFecha(allPartidos.filter(p => p.jornada_id === j.id && p.goles_local_real != null));
 
                     return (
                       <div key={j.id} className="mjp-card">
