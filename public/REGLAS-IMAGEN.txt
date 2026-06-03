@@ -1,0 +1,8 @@
+Coloca aquí tu imagen de reglas con uno de estos nombres:
+
+  reglas.png   (recomendado)
+  reglas.jpg
+  reglas.jpeg
+  reglas.webp
+
+La app la mostrará en la pestaña "Reglas" de los participantes.

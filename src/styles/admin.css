@@ -325,6 +325,29 @@
 ═══════════════════════════════════════ */
 .add-user-fields { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
 .add-user-field  { display: flex; flex-direction: column; gap: 4px; }
+.add-user-username-row { display: flex; gap: 8px; align-items: stretch; }
+.add-user-username-row .admin-input { flex: 1; min-width: 0; }
+.usuarios-add-actions { margin-bottom: 10px; }
+
+.admin-btn-secondary {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 12px;
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.admin-btn-secondary:hover:not(:disabled) {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.22);
+}
+.admin-btn-secondary:disabled { opacity: 0.45; cursor: not-allowed; }
+.admin-btn-compact { padding: 10px 12px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
 
 .usuarios-grid {
   display: flex; flex-direction: column; gap: 8px;
@@ -360,7 +383,7 @@
 .user-edit-fields { display: flex; flex-direction: column; gap: 8px; width: 100%; }
 .user-edit-field  { display: flex; flex-direction: column; gap: 3px; }
 .user-edit-label  { font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dimmer); }
-.user-edit-actions { display: flex; gap: 6px; margin-top: 2px; }
+.user-edit-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 .user-card:has(.user-edit-fields) { flex-direction: column; align-items: flex-start; gap: 12px; }
 
 /* Buscador */

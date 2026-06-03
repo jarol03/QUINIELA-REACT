@@ -8,6 +8,11 @@ import PreviasTab from "./PreviasTab";
 import AdminFinalTab from "./AdminFinalTab";
 import RachaTab from "./RachaTab";
 import { ordenarPartidosPorFecha, sincronizarOrdenPartidosJornada } from "./rachaUtils";
+import {
+  generateUsernameFromNombre,
+  formatCredencialesCopy,
+  copyTextToClipboard,
+} from "../utils/usernameUtils";
 import { useEffect } from "react";
 
 const PAGE_SIZE = 1000;
@@ -516,6 +521,32 @@ function UsuariosTab() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
+  const existingUsernames = usuarios.map((u) => u.username);
+
+  const handleGenerarUsername = () => {
+    if (!newNombre.trim()) {
+      showToast("Escribe el nombre completo primero.");
+      return;
+    }
+    const sugerido = generateUsernameFromNombre(newNombre, existingUsernames);
+    if (!sugerido) {
+      showToast("No se pudo generar un usuario.");
+      return;
+    }
+    setNewUser(sugerido);
+    showToast(`Usuario sugerido: ${sugerido}`);
+  };
+
+  const handleCopiarCredenciales = async (nombre, username) => {
+    const text = formatCredencialesCopy(nombre, username);
+    if (!text) {
+      showToast("No hay nombre ni usuario para copiar.");
+      return;
+    }
+    const ok = await copyTextToClipboard(text);
+    showToast(ok ? "Copiado al portapapeles ✓" : "No se pudo copiar.");
+  };
+
   const filtered = usuarios.filter(u =>
     u.username.includes(search.toLowerCase()) ||
     (u.nombre || "").toLowerCase().includes(search.toLowerCase())
@@ -537,9 +568,29 @@ function UsuariosTab() {
             </div>
             <div className="add-user-field">
               <label className="dt-label">Usuario (para login)</label>
-              <input className="admin-input" placeholder="Ej: juangarcia (sin espacios)..." value={newUser}
-                onChange={e => setNewUser(e.target.value)} onKeyDown={e => e.key === "Enter" && createUser()} />
+              <div className="add-user-username-row">
+                <input className="admin-input" placeholder="Ej: juangarcia (sin espacios)..." value={newUser}
+                  onChange={e => setNewUser(e.target.value)} onKeyDown={e => e.key === "Enter" && createUser()} />
+                <button
+                  type="button"
+                  className="admin-btn-secondary admin-btn-compact"
+                  onClick={handleGenerarUsername}
+                  title="Generar usuario desde el nombre"
+                >
+                  ✨ Generar
+                </button>
+              </div>
             </div>
+          </div>
+          <div className="usuarios-add-actions">
+            <button
+              type="button"
+              className="admin-btn-secondary w-full"
+              onClick={() => handleCopiarCredenciales(newNombre, newUser)}
+              disabled={!newNombre.trim() && !newUser.trim()}
+            >
+              📋 Copiar nombre y usuario
+            </button>
           </div>
           <button className="admin-btn-primary w-full" onClick={createUser} disabled={creating || !newUser.trim()}>
             {creating ? "..." : "+ Agregar participante"}
@@ -590,6 +641,26 @@ function UsuariosTab() {
                         </div>
                       </div>
                       <div className="user-edit-actions">
+                        <button
+                          type="button"
+                          className="admin-btn-secondary admin-btn-compact"
+                          onClick={() => {
+                            const sugerido = generateUsernameFromNombre(
+                              editNombre,
+                              existingUsernames.filter((x) => x !== u.username)
+                            );
+                            if (sugerido) setEditUsername(sugerido);
+                          }}
+                        >
+                          ✨ Generar
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-btn-secondary admin-btn-compact"
+                          onClick={() => handleCopiarCredenciales(editNombre, editUsername)}
+                        >
+                          📋 Copiar
+                        </button>
                         <button className="fecha-save-btn" onClick={() => saveEdit(u.id)} disabled={savingEdit}>
                           {savingEdit ? "..." : "✓ Guardar"}
                         </button>
@@ -607,6 +678,13 @@ function UsuariosTab() {
 
                 {editingId !== u.id && (
                   <div className="user-card-actions">
+                    <button
+                      className="icon-btn"
+                      onClick={() => handleCopiarCredenciales(u.nombre || u.username, u.username)}
+                      title="Copiar nombre y usuario"
+                    >
+                      📋
+                    </button>
                     <button className="icon-btn" onClick={() => startEdit(u)} title="Editar">✏️</button>
                     <button className="user-card-delete" onClick={() => deleteUser(u.id, u.nombre || u.username)}>✕</button>
                   </div>
