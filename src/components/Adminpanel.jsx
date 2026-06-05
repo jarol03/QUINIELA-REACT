@@ -462,12 +462,26 @@ function UsuariosTab() {
     const username = newUser.trim().toLowerCase().replace(/\s+/g, "");
     if (!username) return;
     setCreating(true);
+
+    // Verificar si el username ya existe antes de insertar
+    const { data: existe } = await supabase
+      .from("usuarios")
+      .select("id")
+      .eq("username", username)
+      .single();
+
+    if (existe) {
+      showToast("Ese usuario ya existe, elige otro.");
+      setCreating(false);
+      return;
+    }
+
     const { error } = await supabase.from("usuarios").insert({
       username,
       nombre: newNombre.trim() || username,
     });
     if (!error) { setNewUser(""); setNewNombre(""); fetchUsuarios(); showToast("Usuario creado ✓"); }
-    else showToast("Error: ese usuario ya existe.");
+    else showToast("Error al crear el usuario.");
     setCreating(false);
   };
 
