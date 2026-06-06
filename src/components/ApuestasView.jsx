@@ -68,7 +68,7 @@ export default function ApuestasView({ user }) {
     <div className="user-tab-content">
       <div className="apuestas-section-header">
         <h2 className="apuestas-section-title">Apuestas 💰</h2>
-        <p className="apuestas-section-sub">Entra a un grupo, apuesta y gana del pozo</p>
+        <p className="apuestas-section-sub">Entra a un grupo, apuesta y gana.</p>
       </div>
 
       {loading && (
@@ -79,7 +79,7 @@ export default function ApuestasView({ user }) {
         <div className="apuestas-empty">
           <span className="apuestas-empty-icon">🎲</span>
           <p>Sin grupos activos</p>
-          <span>El admin creará grupos de apuesta pronto.</span>
+          <span>Luis Espinal creará grupos de apuesta pronto.</span>
         </div>
       )}
 
@@ -167,6 +167,21 @@ function GrupoDetail({ grupo, user, onBack, showToast }) {
     }
     setSaving(true);
     try {
+      // Verificar si el grupo sigue abierto antes de guardar
+      const { data: currentGroup, error: groupError } = await supabase
+        .from("grupos_apuesta")
+        .select("estado")
+        .eq("id", grupo.id)
+        .single();
+
+      if (groupError) throw groupError;
+
+      if (currentGroup.estado !== "abierto") {
+        showToast("No se puede guardar: El grupo ya no está abierto", "error");
+        fetchDetalle(); // Recargar para mostrar el estado real
+        return;
+      }
+
       if (miApuesta) {
         // Actualizar
         const { error } = await supabase
@@ -253,9 +268,9 @@ function GrupoDetail({ grupo, user, onBack, showToast }) {
         {apuestas.length > 0 && (
           <div className="apuesta-pozo-card">
             <div>
-              <div className="apuesta-pozo-label">🏆 Pozo total</div>
+              <div className="apuesta-pozo-label">🏆 Dinero en juego</div>
               <div className="apuesta-pozo-participantes">
-                {apuestas.length} participante{apuestas.length !== 1 ? "s" : ""}
+                {apuestas.length} apostador{apuestas.length !== 1 ? "es" : ""}
               </div>
             </div>
             <div className="apuesta-pozo-monto">{fmtL(pozoTotal)}</div>

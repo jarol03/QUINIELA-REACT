@@ -59,20 +59,6 @@ export default function AdminApuestasTab() {
     );
   };
 
-  const toggleParticipante = (id) => {
-    setNewParticipantes((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
-
-  const seleccionarTodos = () => {
-    if (newParticipantes.length === usuarios.length) {
-      setNewParticipantes([]);
-    } else {
-      setNewParticipantes(usuarios.map(u => u.id));
-    }
-  };
-
   const crearGrupo = async () => {
     if (!newNombre.trim()) return;
     if (newParticipantes.length === 0) {
@@ -149,26 +135,12 @@ export default function AdminApuestasTab() {
           </div>
 
           <div className="admin-apuesta-field">
-            <label>Participantes permitidos ({newParticipantes.length}/{usuarios.length})</label>
-            <div className="jornadas-selector">
-              <button
-                className={`jornada-chip ${newParticipantes.length === usuarios.length && usuarios.length > 0 ? "selected" : ""}`}
-                onClick={seleccionarTodos}
-                type="button"
-              >
-                Todos
-              </button>
-              {usuarios.map((u) => (
-                <button
-                  key={u.id}
-                  className={`jornada-chip ${newParticipantes.includes(u.id) ? "selected" : ""}`}
-                  onClick={() => toggleParticipante(u.id)}
-                  type="button"
-                >
-                  {u.nombre || u.username}
-                </button>
-              ))}
-            </div>
+            <label>Participantes permitidos</label>
+            <UserSelector 
+              usuarios={usuarios} 
+              selectedIds={newParticipantes} 
+              onChange={setNewParticipantes} 
+            />
           </div>
 
           <button
@@ -213,6 +185,8 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
   const [ganadores, setGanadores]       = useState([]);   // IDs de ganadores
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [saving, setSaving]             = useState(false);
+  const [isEditingParticipants, setIsEditingParticipants] = useState(false);
+  const [editParticipantes, setEditParticipantes] = useState(grupo.participantes || []);
 
   const fetchDetail = useCallback(async () => {
     setLoadingDetail(true);
@@ -299,6 +273,27 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
     onRefresh();
   };
 
+  const guardarParticipantes = async () => {
+    if (editParticipantes.length === 0) {
+      showToast("Debes seleccionar al menos un participante", "error");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("grupos_apuesta")
+      .update({ participantes: editParticipantes })
+      .eq("id", grupo.id);
+    
+    if (!error) {
+      showToast("Participantes actualizados ✓");
+      setIsEditingParticipants(false);
+      onRefresh(); // Esto recargará los datos del grupo (incluyendo el nuevo array de participantes)
+    } else {
+      showToast("Error al guardar participantes", "error");
+    }
+    setSaving(false);
+  };
+
   // ── Preview de cálculo ─────────────────────────────────────────────
   const previewData = (() => {
     if (apuestas.length === 0 || ganadores.length === 0) return null;
@@ -337,7 +332,7 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
           <div>
             <div className="admin-grupo-nombre">{grupo.nombre}</div>
             <div className="admin-grupo-meta">
-              {apuestas.length} apuesta{apuestas.length !== 1 ? "s" : ""} · Pozo: {fmtL(pozoTotal)}
+              {apuestas.length} apuesta{apuestas.length !== 1 ? "s" : ""} · Dinero: {fmtL(pozoTotal)}
               {totalParticipantes > 0 ? ` · ${totalParticipantes} permitidos` : ""}
               {jornadasNombres ? ` · Jornadas: ${jornadasNombres}` : ""}
             </div>
@@ -360,6 +355,37 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
             </div>
           ) : (
             <>
+              {/* Participantes permitidos (Admin) */}
+              {grupo.estado === "abierto" && (
+                <div>
+                  <p style={{ fontSize: "0.78rem", color: "rgba(240,244,255,0.45)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    Gestión de Participantes
+                  </p>
+                  
+                  {isEditingParticipants ? (
+                    <div style={{ background: "rgba(0,0,0,0.2)", padding: 12, borderRadius: 12, marginBottom: 16 }}>
+                      <UserSelector 
+                        usuarios={usuarios} 
+                        selectedIds={editParticipantes} 
+                        onChange={setEditParticipantes} 
+                      />
+                      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                        <button className="admin-btn-primary" onClick={guardarParticipantes} disabled={saving}>
+                          {saving ? "Guardando..." : "✓ Guardar cambios"}
+                        </button>
+                        <button className="admin-btn-secondary" onClick={() => { setIsEditingParticipants(false); setEditParticipantes(grupo.participantes || []); }} disabled={saving}>
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button className="admin-grupo-edit-btn" onClick={() => setIsEditingParticipants(true)}>
+                      ✏️ Editar participantes permitidos ({totalParticipantes})
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Lista de apuestas */}
               <div>
                 <p style={{ fontSize: "0.78rem", color: "rgba(240,244,255,0.45)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
@@ -498,6 +524,84 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Componente Reutilizable: Selector de Usuarios (Buscador + Scroll) ──
+function UserSelector({ usuarios, selectedIds, onChange }) {
+  const [search, setSearch] = useState("");
+  
+  const toggle = (id) => {
+    if (selectedIds.includes(id)) {
+      onChange(selectedIds.filter(x => x !== id));
+    } else {
+      onChange([...selectedIds, id]);
+    }
+  };
+
+  const selectAll = () => onChange(usuarios.map(u => u.id));
+  const clearAll = () => onChange([]);
+
+  const filtered = usuarios.filter(u => 
+    (u.nombre || "").toLowerCase().includes(search.toLowerCase()) || 
+    (u.username || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="user-selector-container">
+      {selectedIds.length > 0 && (
+        <div className="selected-users-chips">
+          {selectedIds.map(id => {
+            const u = usuarios.find(x => x.id === id);
+            if (!u) return null;
+            return (
+              <div key={id} className="selected-user-chip">
+                {u.nombre || u.username}
+                <button type="button" className="selected-user-chip-remove" onClick={() => toggle(id)}>×</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="user-selector-header">
+        <span className="user-selector-count">{selectedIds.length} seleccionados</span>
+        <div className="user-selector-actions">
+          {selectedIds.length === usuarios.length && usuarios.length > 0 ? (
+            <button type="button" onClick={clearAll}>Deseleccionar todos</button>
+          ) : (
+            <button type="button" onClick={selectAll}>Seleccionar todos</button>
+          )}
+        </div>
+      </div>
+
+      <input 
+        className="user-selector-search" 
+        placeholder="🔍 Buscar participante..." 
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+      />
+
+      <div className="user-selector-list">
+        {filtered.map(u => {
+          const isSel = selectedIds.includes(u.id);
+          return (
+            <div key={u.id} className={`user-selector-item ${isSel ? 'selected' : ''}`} onClick={() => toggle(u.id)}>
+              <div className="user-selector-avatar">
+                {(u.nombre || u.username).charAt(0).toUpperCase()}
+              </div>
+              <div className="user-selector-name">
+                {u.nombre || u.username}
+              </div>
+              <div className="user-selector-check">
+                <span className="user-selector-check-icon">✓</span>
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && <p style={{color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', padding: 8}}>No se encontraron usuarios</p>}
+      </div>
     </div>
   );
 }
