@@ -7,6 +7,7 @@ import PuntosTab from "./PuntosTab";
 import PreviasTab from "./PreviasTab";
 import AdminFinalTab from "./AdminFinalTab";
 import RachaTab from "./RachaTab";
+import AdminApuestasTab from "./AdminApuestasTab";
 import { ordenarPartidosPorFecha, sincronizarOrdenPartidosJornada } from "./rachaUtils";
 import {
   generateUsernameFromNombre,
@@ -39,12 +40,13 @@ const TABS = [
   { id: "previas",  icon: "📊",  label: "Previas" },
   { id: "final",    icon: "🥇",  label: "Final" },
   { id: "racha",    icon: "🔥",  label: "Racha" },
+  { id: "apuestas", icon: "💰",  label: "Apuestas" },
   { id: "copiar",   icon: "📋",  label: "Copiar" },
-  { id: "pagos",    icon: "💰",  label: "Pagos" },
+  { id: "pagos",    icon: "💳",  label: "Pagos" },
   { id: "logs",     icon: "🚨",  label: "Logs" },
 ];
 
-const BOTTOM_TABS = ["home", "jornadas", "puntos", "previas", "copiar"];
+const BOTTOM_TABS = ["home", "jornadas", "puntos", "apuestas", "copiar"];
 
 const TAB_DESC = {
   home:     "Panel central de administración",
@@ -54,6 +56,7 @@ const TAB_DESC = {
   previas:  "Pronósticos por partido",
   final:    "Predicción del partido final",
   racha:    "Premio por 3 exactos seguidos",
+  apuestas: "Grupos de apuesta entre participantes",
   copiar:   "Exporta pronósticos a Excel",
   pagos:    "Control de pagos y recaudación",
   logs:     "Errores de sistema y alertas",
@@ -91,6 +94,7 @@ export default function AdminPanel({ user, onLogout }) {
         {tab === "previas"  && <PreviasTab />}
         {tab === "final"    && <AdminFinalTab />}
         {tab === "racha"    && <RachaTab />}
+        {tab === "apuestas" && <AdminApuestasTab />}
         {tab === "copiar"   && <CopiarTab />}
         {tab === "pagos"    && <PagosTab />}
         {tab === "logs"     && <LogsTab />}
