@@ -725,7 +725,7 @@ export default function UserPanel({ user, onLogout }) {
                 className={`rk-subtab ${rankingSubTab === "global" ? "active" : ""}`}
                 onClick={() => setRankingSubTab("global")}
               >
-                🌍 Global
+                🌍 Tabla Acumulada
               </button>
               <button
                 className={`rk-subtab ${rankingSubTab === "jornada" ? "active" : ""}`}
