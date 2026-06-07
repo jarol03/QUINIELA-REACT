@@ -961,7 +961,7 @@ function PagosTab() {
       usuario_id: user.id,
       ...updates,
       updated_at: new Date().toISOString()
-    });
+    }, { onConflict: 'usuario_id' });
     if (!error) {
       setUsuarios(prev => prev.map(u => u.id === user.id ? { ...u, ...updates } : u));
       if (updates.pagado !== undefined) {
