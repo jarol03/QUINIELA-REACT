@@ -1,13 +1,15 @@
 /**
- * calcularGananciasNetas — Lógica de distribución proporcional de apuestas.
+ * calcularGananciasNetas — Distribución tipo All-In.
  *
  * Reglas:
- * - Si no hay ganadores, todos recuperan su apuesta completa.
- * - Cada ganador le "cobra" a cada participante el mínimo entre
- *   la apuesta del ganador y la del participante, dividido entre
- *   el número de ganadores.
- * - El ganador no se cobra a sí mismo.
- * - El perdedor recupera el sobrante de su apuesta.
+ * - Los ganadores reparten el dinero de los perdedores.
+ * - Cada perdedor paga a cada ganador el mínimo entre la apuesta
+ *   del ganador y la del perdedor.
+ * - Si el total reclamado por los ganadores excede la apuesta del
+ *   perdedor, se distribuye proporcionalmente según lo que apostó
+ *   cada ganador.
+ * - Si no hay ganadores, todos recuperan su apuesta.
+ * - Los perdedores pierden todo su dinero.
  */
 export function calcularGananciasNetas(lista) {
   const resultadoFinal = lista.map((p) => ({
@@ -16,11 +18,11 @@ export function calcularGananciasNetas(lista) {
     apuestaOriginal: Number(p.apuesta),
     gano: p.gano,
     gananciaNeta: 0,
-    devolucionSobrante: Number(p.apuesta),
     totalMano: 0,
   }));
 
   const ganadores = resultadoFinal.filter((p) => p.gano);
+  const perdedores = resultadoFinal.filter((p) => !p.gano);
 
   if (ganadores.length === 0) {
     return resultadoFinal.map((p) => ({
@@ -29,35 +31,44 @@ export function calcularGananciasNetas(lista) {
     }));
   }
 
-  ganadores.forEach((ganador) => {
-    resultadoFinal.forEach((participante) => {
-      const montoDisputado = Math.min(
-        ganador.apuestaOriginal,
-        participante.apuestaOriginal
-      );
+  const totalApuestasGanadores = ganadores.reduce(
+    (sum, g) => sum + g.apuestaOriginal,
+    0
+  );
 
-      // CORRECCIÓN: Contamos cuántos ganadores tienen la capacidad de disputar este monto específico
-      const ganadoresCompetidores = ganadores.filter(
-        (g) => g.apuestaOriginal >= montoDisputado
-      ).length;
+  const recibido = {};
+  ganadores.forEach((g) => (recibido[g.nombre] = 0));
 
-      // Dividimos solo entre los que realmente entraron a competir en este rango
-      const cobroEfectivo = montoDisputado / ganadoresCompetidores;
+  for (const perdedor of perdedores) {
+    const totalPedido = ganadores.reduce(
+      (sum, g) => sum + Math.min(g.apuestaOriginal, perdedor.apuestaOriginal),
+      0
+    );
 
-      if (ganador.nombre !== participante.nombre) {
-        ganador.gananciaNeta += cobroEfectivo;
-        participante.devolucionSobrante -= cobroEfectivo;
+    for (const ganador of ganadores) {
+      if (totalPedido <= perdedor.apuestaOriginal) {
+        recibido[ganador.nombre] += Math.min(
+          ganador.apuestaOriginal,
+          perdedor.apuestaOriginal
+        );
+      } else {
+        recibido[ganador.nombre] +=
+          (ganador.apuestaOriginal / totalApuestasGanadores) *
+          perdedor.apuestaOriginal;
       }
-    });
-  });
+    }
+  }
 
   resultadoFinal.forEach((p) => {
-    p.totalMano = p.gano
-      ? p.apuestaOriginal + p.gananciaNeta
-      : p.devolucionSobrante;
+    if (p.gano) {
+      p.gananciaNeta = recibido[p.nombre];
+      p.totalMano = p.apuestaOriginal + recibido[p.nombre];
+    } else {
+      p.gananciaNeta = -p.apuestaOriginal;
+      p.totalMano = 0;
+    }
 
     p.gananciaNeta = Number(p.gananciaNeta.toFixed(2));
-    p.devolucionSobrante = Number(p.devolucionSobrante.toFixed(2));
     p.totalMano = Number(p.totalMano.toFixed(2));
   });
 

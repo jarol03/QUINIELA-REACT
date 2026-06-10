@@ -84,32 +84,18 @@ export default function ApuestasView({ user }) {
       )}
 
       {!loading && grupos.length > 0 && (
-        <div className="grupos-list">
-          {grupos.map((g, idx) => {
+        <div className="jornada-pills">
+          {grupos.map((g) => {
             const est = estadoLabel(g.estado);
-            const jornadasCount = (g.jornadas || []).length;
             return (
-              <div
+              <button
                 key={g.id}
-                className="grupo-card"
+                className={`jornada-pill ${selectedGrupo?.id === g.id ? "active" : ""}`}
                 onClick={() => setSelected(g)}
-                style={{ animationDelay: `${idx * 0.05}s` }}
               >
-                <div className="grupo-card-left">
-                  <div className={`grupo-card-dot ${est.cls}`} />
-                  <div className="grupo-card-info">
-                    <span className="grupo-card-nombre">{g.nombre}</span>
-                    <span className="grupo-card-meta">
-                      {jornadasCount} jornada{jornadasCount !== 1 ? "s" : ""}
-                      {g.descripcion ? ` · ${g.descripcion}` : ""}
-                    </span>
-                  </div>
-                </div>
-                <div className="grupo-card-right">
-                  <span className={`grupo-estado-badge ${est.cls}`}>{est.text}</span>
-                  <span className="grupo-card-arrow">›</span>
-                </div>
-              </div>
+                {g.nombre}
+                <span className="pill-done">{est.text === "Abierto" ? "○" : est.text === "Cerrado" ? "◉" : "✓"}</span>
+              </button>
             );
           })}
         </div>
