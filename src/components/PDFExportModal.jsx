@@ -80,7 +80,7 @@ export default function PDFExportModal({
       const doc = new jsPDF({
         orientation: "landscape",
         unit: "mm",
-        format: [270, 350],
+        format: [320, 260],
       });
       const W = doc.internal.pageSize.getWidth();
       const H = doc.internal.pageSize.getHeight();
