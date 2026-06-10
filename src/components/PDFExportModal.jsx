@@ -87,7 +87,7 @@ export default function PDFExportModal({
       if (type === "previas" && extraHeader?.barData) preContentY += 10;
       preContentY += 4;
 
-      const pageHeight = Math.max(preContentY + neededRows * rowH + 20, 150);
+      const pageHeight = Math.max(preContentY + neededRows * rowH + 35, 150);
 
       const doc = new jsPDF({
         orientation: "landscape",
@@ -511,7 +511,7 @@ export default function PDFExportModal({
                       className={`pdfm-page-col ${ci > 0 ? "pdfm-col-border" : ""}`}
                       style={{ paddingLeft: "8px" }}
                     >
-                      {colData.slice(0, 10).map((row, ri) => (
+                      {colData.map((row, ri) => (
                         <div
                           key={ri}
                           style={{
