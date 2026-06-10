@@ -6,6 +6,7 @@ import FinalTab from "./FinalTab";
 import RachaView from "./RachaView";
 import RankingJornada from "./RankingJornada";
 import ReglasView from "./ReglasView";
+import ApuestasView from "./ApuestasView";
 import { ordenarPartidosPorFecha } from "./rachaUtils";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -785,6 +786,9 @@ export default function UserPanel({ user, onLogout }) {
 
         {tab === "reglas" && <ReglasView />}
 
+        {/* ═══════════ TAB: APUESTAS ═══════════ */}
+        {tab === "apuestas" && <ApuestasView user={user} />}
+
       </div>
 
       {/* ── BOTTOM NAV ── */}
@@ -812,6 +816,10 @@ export default function UserPanel({ user, onLogout }) {
         <button className={`ubn-item ${tab === "reglas" ? "active" : ""}`} onClick={() => setTab("reglas")}>
           <span className="ubn-icon">📋</span>
           <span className="ubn-label">Reglas</span>
+        </button>
+        <button className={`ubn-item ${tab === "apuestas" ? "active" : ""}`} onClick={() => setTab("apuestas")}>
+          <span className="ubn-icon">💰</span>
+          <span className="ubn-label">Apuestas</span>
         </button>
       </nav>
 

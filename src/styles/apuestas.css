@@ -1,0 +1,925 @@
+/* ═══════════════════════════════════════════════════════════
+   MÓDULO DE APUESTAS — Quiniela 2026
+   Dark glassmorphism, coherente con panel.css / user.css
+═══════════════════════════════════════════════════════════ */
+
+/* ── Lista de grupos ───────────────────────────────────── */
+.apuestas-section-header {
+  margin-bottom: 20px;
+}
+.apuestas-section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f0f4ff;
+  margin: 0 0 4px;
+}
+.apuestas-section-sub {
+  font-size: 0.8rem;
+  color: rgba(240,244,255,0.45);
+  margin: 0;
+}
+
+.grupos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.grupo-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 16px;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  animation: fadeUp 0.3s ease both;
+}
+.grupo-card:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.15);
+  transform: translateY(-1px);
+}
+.grupo-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.grupo-card-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.grupo-card-dot.abierto  { background: #4ade80; box-shadow: 0 0 8px #4ade8080; }
+.grupo-card-dot.cerrado  { background: #facc15; box-shadow: 0 0 8px #facc1580; }
+.grupo-card-dot.liquidado{ background: #818cf8; box-shadow: 0 0 8px #818cf880; }
+
+.grupo-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.grupo-card-nombre {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f0f4ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.grupo-card-meta {
+  font-size: 0.75rem;
+  color: rgba(240,244,255,0.45);
+}
+.grupo-card-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.grupo-estado-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.grupo-estado-badge.abierto  { background: rgba(74,222,128,0.15); color: #4ade80; }
+.grupo-estado-badge.cerrado  { background: rgba(250,204,21,0.15);  color: #facc15; }
+.grupo-estado-badge.liquidado{ background: rgba(129,140,248,0.15); color: #818cf8; }
+
+.grupo-card-arrow {
+  font-size: 1.2rem;
+  color: rgba(240,244,255,0.3);
+}
+
+/* ── Vista detalle de un grupo ─────────────────────────── */
+.apuestas-detail-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.apuestas-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 100px;
+  margin-bottom: 16px;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.apuestas-back-btn:hover { 
+  background: rgba(255,255,255,0.10); 
+  color: var(--text); 
+  border-color: rgba(255,255,255,0.18);
+}
+.apuestas-back-btn:active {
+  transform: scale(0.96);
+}
+
+.apuesta-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.apuesta-detail-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #f0f4ff;
+  margin: 0 0 4px;
+}
+.apuesta-detail-desc {
+  font-size: 0.8rem;
+  color: rgba(240,244,255,0.45);
+  margin: 0;
+}
+
+/* ── Card de "mi apuesta" ──────────────────────────────── */
+.mi-apuesta-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 18px;
+}
+.mi-apuesta-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 12px;
+}
+.mi-apuesta-input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.apuesta-prefix {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.apuesta-monto-input {
+  flex: 1;
+  min-width: 120px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-size: 1.1rem;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  outline: none;
+  transition: all 0.2s;
+  -moz-appearance: textfield;
+}
+.apuesta-monto-input::-webkit-outer-spin-button,
+.apuesta-monto-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.apuesta-monto-input:focus { 
+  border-color: var(--accent); 
+  box-shadow: 0 0 0 3px rgba(0,229,160,0.12);
+}
+.apuesta-monto-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.apuesta-save-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  border-radius: 12px;
+  padding: 12px 20px;
+  color: #0a1628;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0,229,160,0.25);
+  -webkit-tap-highlight-color: transparent;
+}
+.apuesta-save-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,229,160,0.35); }
+.apuesta-save-btn:active { transform: scale(0.98); }
+.apuesta-save-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.apuesta-saved-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,229,160,0.12);
+  border: 1px solid rgba(0,229,160,0.25);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  color: var(--accent);
+  margin-top: 10px;
+}
+.apuesta-cerrado-banner {
+  background: rgba(251,191,36,0.12);
+  border: 1px solid rgba(251,191,36,0.25);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  color: var(--gold);
+  margin-top: 10px;
+}
+
+/* ── Tabla de participantes ────────────────────────────── */
+.apuesta-participantes-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.apuesta-participantes-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--glass-border);
+}
+.apuesta-participantes-list {
+  display: flex;
+  flex-direction: column;
+}
+.apuesta-part-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.15s;
+}
+.apuesta-part-row:last-child { border-bottom: none; }
+.apuesta-part-row:hover { background: rgba(255,255,255,0.03); }
+.apuesta-part-row.es-ganador {
+  background: rgba(0,229,160,0.06);
+  border-left: 3px solid var(--accent);
+}
+.apuesta-part-row.es-yo {
+  background: rgba(59,130,246,0.06);
+}
+
+.apuesta-part-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent2), var(--accent3));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+.apuesta-part-info {
+  flex: 1;
+  min-width: 0;
+}
+.apuesta-part-nombre {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.apuesta-part-yo {
+  font-size: 0.75rem;
+  color: var(--accent2);
+  font-weight: 600;
+}
+.apuesta-part-ganador-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(0,229,160,0.15);
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+.apuesta-part-monto {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+/* ── Tabla de liquidación ──────────────────────────────── */
+.apuesta-liquidacion-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.apuesta-liquidacion-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--glass-border);
+}
+.liquidacion-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.liquidacion-table th {
+  padding: 10px 18px;
+  text-align: right;
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.liquidacion-table th:first-child { text-align: left; }
+.liquidacion-table td {
+  padding: 14px 18px;
+  text-align: right;
+  color: var(--text);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.liquidacion-table td:first-child { text-align: left; }
+.liquidacion-table tr:last-child td { border-bottom: none; }
+.liquidacion-table tr.liq-row-ganador td { color: var(--accent); }
+.liquidacion-table tr.liq-row-yo td { font-weight: 700; color: var(--text); }
+
+.liq-nombre-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.liq-total-cell {
+  font-weight: 700;
+  color: var(--text) !important;
+}
+.liq-ganancia-pos { color: var(--accent) !important; font-weight: 700; }
+.liq-ganancia-neg { color: var(--text-dim) !important; }
+
+/* ── Pozo total ────────────────────────────────────────── */
+.apuesta-pozo-card {
+  background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(168,85,247,0.08));
+  border: 1px solid rgba(59,130,246,0.25);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.apuesta-pozo-label {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.apuesta-pozo-monto {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.apuesta-pozo-participantes {
+  font-size: 0.8rem;
+  color: var(--text-dimmer);
+  margin-top: 4px;
+}
+
+/* ── Empty state ───────────────────────────────────────── */
+.apuestas-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 48px 24px;
+  text-align: center;
+  color: rgba(240,244,255,0.4);
+}
+.apuestas-empty-icon { font-size: 2.5rem; }
+.apuestas-empty p { font-size: 0.95rem; font-weight: 600; color: rgba(240,244,255,0.55); margin: 0; }
+.apuestas-empty span { font-size: 0.8rem; }
+
+/* ── Admin: Crear grupo ────────────────────────────────── */
+.admin-apuestas-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.admin-apuesta-create-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 20px;
+}
+.admin-apuesta-create-card h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: rgba(240,244,255,0.7);
+  margin: 0 0 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.admin-apuesta-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.admin-apuesta-field label {
+  display: block;
+  font-size: 0.75rem;
+  color: rgba(240,244,255,0.45);
+  margin-bottom: 5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Selector de jornadas para admin */
+.jornadas-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.jornada-chip {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  color: rgba(240,244,255,0.6);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.jornada-chip:hover {
+  border-color: rgba(129,140,248,0.4);
+  color: #f0f4ff;
+}
+.jornada-chip.selected {
+  background: rgba(129,140,248,0.2);
+  border-color: #818cf8;
+  color: #818cf8;
+  font-weight: 700;
+}
+
+/* ── Mejoras para el Selector de Usuarios (Admin) ── */
+.user-selector-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg1);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.user-selector-search {
+  width: 100%;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-size: 1rem;
+  font-family: 'Outfit', sans-serif;
+  outline: none;
+  transition: all 0.2s;
+}
+.user-selector-search:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,229,160,0.12);
+}
+
+.user-selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.user-selector-count {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.user-selector-actions button {
+  background: none;
+  border: none;
+  color: var(--accent2);
+  font-size: 0.8rem;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.user-selector-actions button:hover {
+  background: rgba(59,130,246,0.1);
+}
+
+.user-selector-list {
+  max-height: 280px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 4px;
+}
+.user-selector-list::-webkit-scrollbar { width: 6px; }
+.user-selector-list::-webkit-scrollbar-track { background: transparent; }
+.user-selector-list::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 4px; }
+
+.user-selector-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--glass);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.user-selector-item:active { transform: scale(0.98); }
+.user-selector-item.selected {
+  background: rgba(0,229,160,0.08);
+  border-color: rgba(0,229,160,0.25);
+}
+
+.user-selector-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.user-selector-item.selected .user-selector-avatar {
+  background: var(--accent);
+  color: var(--bg1);
+}
+
+.user-selector-name {
+  font-size: 0.95rem;
+  color: var(--text);
+  font-weight: 500;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-selector-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.user-selector-item.selected .user-selector-check {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.user-selector-check-icon {
+  font-size: 0.8rem;
+  color: var(--bg1);
+  font-weight: 900;
+  display: none;
+}
+.user-selector-item.selected .user-selector-check-icon { display: block; }
+
+/* Chips de usuarios seleccionados */
+.selected-users-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  max-height: 100px;
+  overflow-y: auto;
+}
+.selected-user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,229,160,0.12);
+  border: 1px solid rgba(0,229,160,0.3);
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 6px 10px 6px 14px;
+  border-radius: 100px;
+}
+.selected-user-chip-remove {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+}
+.selected-user-chip-remove:hover { opacity: 1; color: var(--danger); }
+
+.selected-user-chip-more {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.15);
+  color: var(--text-dim);
+  font-weight: 700;
+}
+
+.admin-grupo-section-label {
+  font-size: 0.78rem;
+  color: rgba(240,244,255,0.45);
+  margin-bottom: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-card-inner {
+  background: rgba(255,255,255,0.02);
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+
+.admin-edit-section {
+  background: rgba(0,0,0,0.2);
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.admin-preview-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-grupo-edit-btn {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.admin-grupo-edit-btn:hover { background: var(--glass-hover); border-color: rgba(255,255,255,0.18); }
+.admin-grupo-edit-btn:active { transform: scale(0.98); }
+
+
+/* ── Admin: Lista grupos ────────────────────────────────── */
+.admin-grupos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.admin-grupo-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.admin-grupo-card:hover { border-color: rgba(255,255,255,0.12); }
+.admin-grupo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+}
+.admin-grupo-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.admin-grupo-nombre {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f0f4ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-grupo-meta {
+  font-size: 0.75rem;
+  color: rgba(240,244,255,0.4);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-grupo-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.admin-grupo-arrow {
+  color: rgba(240,244,255,0.3);
+  font-size: 0.8rem;
+}
+.admin-grupo-body {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Selección de ganadores */
+.ganadores-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ganador-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ganador-row:hover { background: rgba(255,255,255,0.05); }
+.ganador-row.selected {
+  background: rgba(74,222,128,0.08);
+  border-color: rgba(74,222,128,0.25);
+}
+.ganador-checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 2px solid rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.ganador-row.selected .ganador-checkbox {
+  background: #4ade80;
+  border-color: #4ade80;
+}
+.ganador-checkbox-check {
+  font-size: 0.7rem;
+  color: #000;
+  font-weight: 900;
+  display: none;
+}
+.ganador-row.selected .ganador-checkbox-check { display: block; }
+.ganador-row-info { flex: 1; }
+.ganador-row-nombre { font-size: 0.9rem; color: #f0f4ff; font-weight: 600; }
+.ganador-row-apuesta { font-size: 0.75rem; color: rgba(240,244,255,0.45); }
+
+/* Preview de cálculo en admin */
+.admin-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.admin-preview-table th {
+  padding: 6px 10px;
+  text-align: right;
+  color: rgba(240,244,255,0.4);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.admin-preview-table th:first-child { text-align: left; }
+.admin-preview-table td {
+  padding: 8px 10px;
+  text-align: right;
+  color: rgba(240,244,255,0.75);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.admin-preview-table td:first-child { text-align: left; color: #f0f4ff; }
+.admin-preview-table tr:last-child td { border-bottom: none; }
+.admin-preview-table tr.preview-ganador td { color: #4ade80; font-weight: 700; }
+
+.admin-apuesta-action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.admin-apuesta-cerrar-btn {
+  background: rgba(250,204,21,0.12);
+  border: 1px solid rgba(250,204,21,0.3);
+  color: #facc15;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.admin-apuesta-cerrar-btn:hover { background: rgba(250,204,21,0.2); }
+.admin-apuesta-liquidar-btn {
+  background: rgba(129,140,248,0.12);
+  border: 1px solid rgba(129,140,248,0.3);
+  color: #818cf8;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.admin-apuesta-liquidar-btn:hover:not(:disabled) { background: rgba(129,140,248,0.2); }
+.admin-apuesta-liquidar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.admin-apuesta-delete-btn {
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.2);
+  color: #ef4444;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.admin-apuesta-delete-btn:hover { background: rgba(239,68,68,0.15); }
+
+.admin-apuesta-reabrir-btn {
+  background: rgba(74,222,128,0.08);
+  border: 1px solid rgba(74,222,128,0.2);
+  color: #4ade80;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.admin-apuesta-reabrir-btn:hover { background: rgba(74,222,128,0.15); }
+
+/* ── Animaciones ───────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
