@@ -756,8 +756,8 @@ function CopiarTab() {
   };
 
   const filteredUsers = usuarios
-    .filter(u => u.username.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => sortAZ ? a.username.localeCompare(b.username) : b.username.localeCompare(a.username));
+    .filter(u => (u.nombre || u.username).toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => sortAZ ? (a.nombre || a.username).localeCompare(b.nombre || b.username) : (b.nombre || b.username).localeCompare(a.nombre || a.username));
 
   const currentUser = filteredUsers[userIdx];
   const countProns = (u) => {
@@ -828,9 +828,9 @@ function CopiarTab() {
                 const done = cnt === partidos.length;
                 return (
                   <button key={u.id} className={`cup-user-item ${userIdx === i ? "active" : ""} ${done ? "cup-done" : ""}`} onClick={() => goTo(i)}>
-                    <div className="cup-avatar">{u.username.charAt(0).toUpperCase()}</div>
+                    <div className="cup-avatar">{(u.nombre || u.username).charAt(0).toUpperCase()}</div>
                     <div className="cup-user-info">
-                      <span className="cup-username">{u.username}</span>
+                      <span className="cup-username">{u.nombre || u.username}</span>
                       <span className="cup-progress-text">{cnt}/{partidos.length} pronósticos</span>
                     </div>
                     {done && <span className="cup-check">✓</span>}
@@ -844,9 +844,9 @@ function CopiarTab() {
             {!currentUser ? <div className="empty-state-col"><p>Selecciona un participante</p></div> : (
               <>
                 <div className="detail-user-header">
-                  <div className="detail-avatar">{currentUser.username.charAt(0).toUpperCase()}</div>
+                  <div className="detail-avatar">{(currentUser.nombre || currentUser.username).charAt(0).toUpperCase()}</div>
                   <div className="detail-user-meta">
-                    <h2 className="detail-username">{currentUser.username}</h2>
+                    <h2 className="detail-username">{currentUser.nombre || currentUser.username}</h2>
                     <div className="detail-progress-row">
                       <div className="detail-progress-track"><div className="detail-progress-fill" style={{ width: `${pct}%` }} /></div>
                       <span className="detail-pct">{totalProns}/{partidos.length}</span>
@@ -892,7 +892,7 @@ function CopiarTab() {
                   <div className="detail-btns">
                     <button className={`copiar-btn ${copied ? "copied" : ""}`} onClick={handleCopy}>{copied ? "✓ Copiado" : "📋 Copiar para Excel"}</button>
                     {userIdx < filteredUsers.length - 1 && (
-                      <button className="siguiente-btn" onClick={() => goTo(userIdx+1)}>Siguiente → {filteredUsers[userIdx+1]?.username}</button>
+                      <button className="siguiente-btn" onClick={() => goTo(userIdx+1)}>Siguiente → {filteredUsers[userIdx+1]?.nombre || filteredUsers[userIdx+1]?.username}</button>
                     )}
                     {userIdx === filteredUsers.length - 1 && <span className="fin-text">✓ Último participante</span>}
                   </div>
