@@ -53,12 +53,6 @@ export default function AdminApuestasTab() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const toggleJornada = (id) => {
-    setNewJornadas((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
-
   const crearGrupo = async () => {
     if (!newNombre.trim()) return;
     if (newParticipantes.length === 0) {
@@ -115,23 +109,11 @@ export default function AdminApuestasTab() {
 
           <div className="admin-apuesta-field">
             <label>Jornadas que cubre (para saber quién ganó)</label>
-            <div className="jornadas-selector">
-              {jornadas.length === 0 && (
-                <span style={{ color: "rgba(240,244,255,0.35)", fontSize: "0.8rem" }}>
-                  Sin jornadas disponibles
-                </span>
-              )}
-              {jornadas.map((j) => (
-                <button
-                  key={j.id}
-                  className={`jornada-chip ${newJornadas.includes(j.id) ? "selected" : ""}`}
-                  onClick={() => toggleJornada(j.id)}
-                  type="button"
-                >
-                  {j.nombre}
-                </button>
-              ))}
-            </div>
+            <JornadasSelector
+              jornadas={jornadas}
+              selectedIds={newJornadas}
+              onChange={setNewJornadas}
+            />
           </div>
 
           <div className="admin-apuesta-field">
@@ -340,7 +322,7 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
         </div>
         <div className="admin-grupo-actions" onClick={(e) => e.stopPropagation()}>
           <span className={`grupo-estado-badge ${est.cls}`}>{est.text}</span>
-          <span style={{ color: "rgba(240,244,255,0.3)", marginLeft: 4 }}>
+          <span className="admin-grupo-arrow">
             {isExpanded ? "▲" : "▼"}
           </span>
         </div>
@@ -350,7 +332,7 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
       {isExpanded && (
         <div className="admin-grupo-body">
           {loadingDetail ? (
-            <div className="loading-state" style={{ padding: "16px 0" }}>
+            <div className="loading-state">
               <div className="spinner" />
             </div>
           ) : (
@@ -358,18 +340,18 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
               {/* Participantes permitidos (Admin) */}
               {grupo.estado === "abierto" && (
                 <div>
-                  <p style={{ fontSize: "0.78rem", color: "rgba(240,244,255,0.45)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  <p className="admin-grupo-section-label">
                     Gestión de Participantes
                   </p>
                   
                   {isEditingParticipants ? (
-                    <div style={{ background: "rgba(0,0,0,0.2)", padding: 12, borderRadius: 12, marginBottom: 16 }}>
+                    <div className="admin-edit-section">
                       <UserSelector 
                         usuarios={usuarios} 
                         selectedIds={editParticipantes} 
                         onChange={setEditParticipantes} 
                       />
-                      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                      <div className="admin-edit-actions">
                         <button className="admin-btn-primary" onClick={guardarParticipantes} disabled={saving}>
                           {saving ? "Guardando..." : "✓ Guardar cambios"}
                         </button>
@@ -388,13 +370,13 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
 
               {/* Lista de apuestas */}
               <div>
-                <p style={{ fontSize: "0.78rem", color: "rgba(240,244,255,0.45)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                <p className="admin-grupo-section-label">
                   Apuestas registradas ({apuestas.length})
                 </p>
                 {apuestas.length === 0 ? (
                   <p className="dim-text">Nadie ha apostado aún.</p>
                 ) : (
-                  <div className="apuesta-participantes-list" style={{ background: "rgba(255,255,255,0.02)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                  <div className="admin-card-inner">
                     {apuestas
                       .sort((a, b) => Number(b.monto) - Number(a.monto))
                       .map((a) => (
@@ -417,7 +399,7 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
               {/* Selección de ganadores (solo si cerrado) */}
               {grupo.estado === "cerrado" && apuestas.length > 0 && (
                 <div>
-                  <p style={{ fontSize: "0.78rem", color: "rgba(240,244,255,0.45)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  <p className="admin-grupo-section-label">
                     Marcar ganador(es)
                   </p>
                   <div className="ganadores-selector">
@@ -446,10 +428,10 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
               {/* Preview de cálculo */}
               {previewData && grupo.estado === "cerrado" && (
                 <div>
-                  <p style={{ fontSize: "0.78rem", color: "rgba(240,244,255,0.45)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  <p className="admin-grupo-section-label">
                     Preview de distribución
                   </p>
-                  <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                  <div className="admin-card-inner admin-preview-table-wrap">
                     <table className="admin-preview-table">
                       <thead>
                         <tr>
@@ -528,7 +510,86 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
   );
 }
 
-// ── Componente Reutilizable: Selector de Usuarios (Buscador + Scroll) ──
+// ── Selector de Jornadas (Buscador + Lista) ─────────────────────────────
+function JornadasSelector({ jornadas, selectedIds, onChange }) {
+  const [search, setSearch] = useState("");
+
+  const toggle = (id) => {
+    if (selectedIds.includes(id)) {
+      onChange(selectedIds.filter(x => x !== id));
+    } else {
+      onChange([...selectedIds, id]);
+    }
+  };
+
+  const selectAll = () => onChange(jornadas.map(j => j.id));
+  const clearAll = () => onChange([]);
+
+  const filtered = jornadas.filter(j =>
+    (j.nombre || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  const CHIP_LIMIT = 5;
+
+  return (
+    <div className="user-selector-container">
+      {selectedIds.length > 0 && (
+        <div className="selected-users-chips">
+          {selectedIds.slice(0, CHIP_LIMIT).map(id => {
+            const j = jornadas.find(x => x.id === id);
+            if (!j) return null;
+            return (
+              <div key={id} className="selected-user-chip">
+                {j.nombre}
+                <button type="button" className="selected-user-chip-remove" onClick={() => toggle(id)}>×</button>
+              </div>
+            );
+          })}
+          {selectedIds.length > CHIP_LIMIT && (
+            <div className="selected-user-chip selected-user-chip-more">
+              +{selectedIds.length - CHIP_LIMIT} más
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="user-selector-header">
+        <span className="user-selector-count">{selectedIds.length} seleccionados</span>
+        <div className="user-selector-actions">
+          {selectedIds.length === jornadas.length && jornadas.length > 0 ? (
+            <button type="button" onClick={clearAll}>Deseleccionar todos</button>
+          ) : (
+            <button type="button" onClick={selectAll}>Seleccionar todos</button>
+          )}
+        </div>
+      </div>
+
+      <input
+        className="user-selector-search"
+        placeholder="🔍 Buscar jornada..."
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+      />
+
+      <div className="user-selector-list">
+        {filtered.map(j => {
+          const isSel = selectedIds.includes(j.id);
+          return (
+            <div key={j.id} className={`user-selector-item ${isSel ? 'selected' : ''}`} onClick={() => toggle(j.id)}>
+              <div className="user-selector-name">{j.nombre}</div>
+              <div className="user-selector-check">
+                <span className="user-selector-check-icon">✓</span>
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && <p className="dim-text" style={{padding: '8px 0'}}>No se encontraron jornadas</p>}
+      </div>
+    </div>
+  );
+}
+
+// ── Selector de Usuarios (Buscador + Chips + Lista) ─────────────────────
 function UserSelector({ usuarios, selectedIds, onChange }) {
   const [search, setSearch] = useState("");
   
@@ -548,11 +609,13 @@ function UserSelector({ usuarios, selectedIds, onChange }) {
     (u.username || "").toLowerCase().includes(search.toLowerCase())
   );
 
+  const CHIP_LIMIT = 5;
+
   return (
     <div className="user-selector-container">
       {selectedIds.length > 0 && (
         <div className="selected-users-chips">
-          {selectedIds.map(id => {
+          {selectedIds.slice(0, CHIP_LIMIT).map(id => {
             const u = usuarios.find(x => x.id === id);
             if (!u) return null;
             return (
@@ -562,6 +625,11 @@ function UserSelector({ usuarios, selectedIds, onChange }) {
               </div>
             );
           })}
+          {selectedIds.length > CHIP_LIMIT && (
+            <div className="selected-user-chip selected-user-chip-more">
+              +{selectedIds.length - CHIP_LIMIT} más
+            </div>
+          )}
         </div>
       )}
 
@@ -600,7 +668,7 @@ function UserSelector({ usuarios, selectedIds, onChange }) {
             </div>
           );
         })}
-        {filtered.length === 0 && <p style={{color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem', padding: 8}}>No se encontraron usuarios</p>}
+        {filtered.length === 0 && <p className="dim-text" style={{padding: '8px 0'}}>No se encontraron usuarios</p>}
       </div>
     </div>
   );

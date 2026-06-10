@@ -549,8 +549,9 @@
 }
 
 .user-selector-list {
-  max-height: 240px;
+  max-height: 280px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -664,6 +665,47 @@
 }
 .selected-user-chip-remove:hover { opacity: 1; color: var(--danger); }
 
+.selected-user-chip-more {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.15);
+  color: var(--text-dim);
+  font-weight: 700;
+}
+
+.admin-grupo-section-label {
+  font-size: 0.78rem;
+  color: rgba(240,244,255,0.45);
+  margin-bottom: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-card-inner {
+  background: rgba(255,255,255,0.02);
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+
+.admin-edit-section {
+  background: rgba(0,0,0,0.2);
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.admin-preview-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .admin-grupo-edit-btn {
   background: var(--glass);
   border: 1px solid var(--glass-border);
@@ -717,17 +759,27 @@
   font-size: 0.95rem;
   font-weight: 600;
   color: #f0f4ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .admin-grupo-meta {
   font-size: 0.75rem;
   color: rgba(240,244,255,0.4);
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .admin-grupo-actions {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+}
+.admin-grupo-arrow {
+  color: rgba(240,244,255,0.3);
+  font-size: 0.8rem;
 }
 .admin-grupo-body {
   border-top: 1px solid rgba(255,255,255,0.06);

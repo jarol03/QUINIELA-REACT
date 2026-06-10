@@ -39,6 +39,10 @@ CREATE TABLE IF NOT EXISTS ganadores_apuesta (
   UNIQUE(grupo_id, usuario_id)
 );
 
+-- 4. Índices para performance con muchos datos
+CREATE INDEX IF NOT EXISTS idx_apuestas_grupo ON apuestas(grupo_id);
+CREATE INDEX IF NOT EXISTS idx_ganadores_grupo ON ganadores_apuesta(grupo_id);
+
 -- ═══════════════════════════════════════════════════════════════════
 --  DESHABILITAR RLS (Row Level Security)
 --  Necesario para que la aplicación pueda escribir sin Supabase Auth
