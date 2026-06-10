@@ -28,7 +28,7 @@ export default function PDFExportModal({
     else if (n <= 45) setCols(2);
     else if (n <= 80) setCols(3);
     else if (n <= 120) setCols(4);
-    else setCols(5);
+    else setCols(6);
   }, [open, data.length]);
 
   useEffect(() => {
@@ -152,7 +152,7 @@ export default function PDFExportModal({
 
       const colW = (W - PAD * 2 - (cols - 1) * 3) / cols;
       const scoreBlockWidth = type === "previas"
-        ? Math.min(Math.max(colW * 0.3, 21), 35)
+        ? Math.min(Math.max(colW * 0.3, cols >= 6 ? 18 : 21), 35)
         : 0;
       const nameMaxWidth = colW - scoreBlockWidth - 3;
 
@@ -423,7 +423,7 @@ export default function PDFExportModal({
             <div className="pdfm-field">
               <label className="pdfm-label">Número de columnas</label>
               <div className="pdfm-cols-btns">
-                {[2, 3, 4, 5].map((n) => (
+                {[2, 3, 4, 5, 6].map((n) => (
                   <button
                     key={n}
                     className={`pdfm-col-btn ${cols === n ? "active" : ""}`}
