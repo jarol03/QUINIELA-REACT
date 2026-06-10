@@ -60,7 +60,6 @@ export default function PDFExportModal({
     md: { name: 12, sub: 10, row: 9 },
     lg: { name: 14, sub: 11, row: 10 },
   };
-  const fs = fsMap[fontSize];
 
   const truncateText = (doc, text, maxWidth) => {
     if (doc.getTextWidth(text) <= maxWidth) return text;
@@ -77,19 +76,27 @@ export default function PDFExportModal({
   const generatePDF = async () => {
     setGenerating(true);
     try {
+      const neededRows = Math.max(...columns.map(c => c.length));
+      const fs = fsMap[fontSize];
+      const rowH =
+        showUser || (type === "previas" && showHora)
+          ? fs.row * 0.6 + 4.5
+          : fs.row * 0.6 + 2.5;
+
+      let preContentY = subtitle ? 26 : 22;
+      if (type === "previas" && extraHeader?.barData) preContentY += 10;
+      preContentY += 4;
+
+      const pageHeight = Math.max(preContentY + neededRows * rowH + 20, 150);
+
       const doc = new jsPDF({
         orientation: "landscape",
         unit: "mm",
-        format: [270, 300],
+        format: [270, pageHeight],
       });
       const W = doc.internal.pageSize.getWidth();
       const H = doc.internal.pageSize.getHeight();
       const PAD = 12;
-
-      // --- LÓGICA DE DESPLAZAMIENTO (Solo para previas) ---
-      const offsetMap = { 1: 90, 2: 40, 3: 26, 4: 22, 5: 15 };
-      const currentOffset = type === "previas" ? offsetMap[cols] || 17 : 17;
-      const dataBlockWidth = type === "previas" ? currentOffset + 5 : 25;
 
       doc.setFillColor(13, 15, 26);
       doc.rect(0, 0, W, H, "F");
@@ -143,13 +150,11 @@ export default function PDFExportModal({
       doc.line(PAD, contentY, W - PAD, contentY);
       contentY += 4;
 
-      const rowH =
-        showUser || (type === "previas" && showHora)
-          ? fs.row * 0.6 + 4.5
-          : fs.row * 0.6 + 2.5;
-      const tableH = H - contentY - 10;
       const colW = (W - PAD * 2 - (cols - 1) * 3) / cols;
-      const maxRows = Math.floor(tableH / rowH);
+      const scoreBlockWidth = type === "previas"
+        ? Math.min(Math.max(colW * 0.3, 21), 35)
+        : 0;
+      const nameMaxWidth = colW - scoreBlockWidth - 3;
 
       columns.forEach((colData, ci) => {
         const cx = PAD + ci * (colW + 3);
@@ -158,7 +163,7 @@ export default function PDFExportModal({
         // Línea divisoria entre columnas
         if (ci > 0) {
           doc.setDrawColor(30, 42, 72);
-          doc.line(cx - 1.5, contentY - 4, cx - 1.5, contentY + maxRows * rowH);
+          doc.line(cx - 1.5, contentY - 4, cx - 1.5, contentY + colData.length * rowH);
         }
 
         // --- ENCABEZADOS DE COLUMNA (Se dibujan una vez por columna) ---
@@ -177,7 +182,7 @@ export default function PDFExportModal({
           }
         } else {
           doc.text("PARTICIPANTE", cx, contentY);
-          doc.text("MARCADOR", rightEdge - currentOffset, contentY, {
+          doc.text("MARCADOR", rightEdge - scoreBlockWidth / 2, contentY, {
             align: "center",
           });
           doc.text("R", rightEdge - 1, contentY, { align: "right" });
@@ -280,19 +285,27 @@ export default function PDFExportModal({
           } else {
             // MODO PREVIAS
             const nm = row.nombre || row.username || "";
-            doc.setFontSize(fs.row);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(220, 230, 248);
 
-            const maxNameWidth = colW - dataBlockWidth;
-            doc.text(truncateText(doc, nm, maxNameWidth), cx + 1, nameY);
+            let nameFS = fs.row;
+            doc.setFontSize(nameFS);
+            let displayName = nm;
+            while (doc.getTextWidth(displayName) > nameMaxWidth && nameFS > 7) {
+              nameFS -= 0.5;
+              doc.setFontSize(nameFS);
+            }
+            if (doc.getTextWidth(displayName) > nameMaxWidth) {
+              displayName = truncateText(doc, nm, nameMaxWidth);
+            }
+            doc.text(displayName, cx + 1, nameY);
 
             if (hasSubName) {
               doc.setFontSize(fs.row - 2.5);
               doc.setFont("helvetica", "normal");
               doc.setTextColor(80, 100, 140);
               doc.text(
-                truncateText(doc, `@${row.username}`, maxNameWidth),
+                truncateText(doc, `@${row.username}`, nameMaxWidth),
                 cx + 1,
                 subNameY,
               );
@@ -301,30 +314,31 @@ export default function PDFExportModal({
             doc.setFont("helvetica", "normal");
             doc.setFontSize(fs.row);
 
+            const scoreCenterX = rightEdge - scoreBlockWidth / 2;
+
             if (row.gep !== null && row.gep !== undefined) {
               doc.setTextColor(200, 215, 240);
               doc.text(
                 `${row.goles_local} – ${row.goles_visitante}`,
-                rightEdge - currentOffset,
+                scoreCenterX,
                 textY,
                 { align: "center" },
               );
 
-              // NUEVO: Agregar la hora en pequeñito si el check está activo
               if (showHora && row.hora) {
-                doc.setFontSize(fs.row - 3); // Hace la letra más pequeña
-                doc.setTextColor(120, 135, 160); // Un tono gris sutil
+                doc.setFontSize(fs.row - 3);
+                doc.setTextColor(120, 135, 160);
                 doc.text(
                   row.hora,
-                  rightEdge - currentOffset,
-                  textY + 2.8, // Lo baja un poco respecto al marcador
+                  scoreCenterX,
+                  textY + 2.8,
                   { align: "center" },
                 );
-                doc.setFontSize(fs.row); // Restaurar el tamaño de fuente original
+                doc.setFontSize(fs.row);
               }
             } else {
               doc.setTextColor(70, 85, 115);
-              doc.text("—", rightEdge - currentOffset, textY, {
+              doc.text("—", scoreCenterX, textY, {
                 align: "center",
               });
             }
