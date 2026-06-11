@@ -55,6 +55,7 @@ export default function Login({ onLogin }) {
       .single();
 
     if (err || !data) {
+      console.error("❌ Login error — username:", name, "err:", err);
       setError("Usuario no encontrado. Contacta al administrador.");
       setLoading(false);
       return;

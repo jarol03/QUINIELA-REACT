@@ -51,5 +51,6 @@ export async function verifyUserStillExists(userId) {
   if (userId === "admin") return true;
   const { data, error } = await db
     .from("usuarios").select("id").eq("id", userId).single();
+  if (error) console.error("🔍 verifyUserStillExists — userId:", userId, "error:", error);
   return !error && !!data;
 }
