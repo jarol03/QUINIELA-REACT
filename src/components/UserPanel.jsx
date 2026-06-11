@@ -217,13 +217,14 @@ export default function UserPanel({ user, onLogout }) {
         fetchAllPaginated((from, to) =>
           supabase.from("partidos").select("*").range(from, to)
         ),
-        fetchAllPaginated((from, to) =>
-          supabase
+        fetchAllPaginated((from, to) => {
+          console.log("🔍 loadRanking — fetching pronosticos for user:", user.id, "range:", from, to);
+          return supabase
             .from("pronosticos")
             .select("*")
             .eq("usuario_id", user.id)
-            .range(from, to)
-        ),
+            .range(from, to);
+        }),
         fetchAllPaginated((from, to) =>
           supabase.from("ranking_jornada_view").select("*").range(from, to)
         ),
@@ -235,9 +236,11 @@ export default function UserPanel({ user, onLogout }) {
       const jornadasConRes = (js || []).filter((j) =>
         (allPts || []).some((p) => p.jornada_id === j.id && p.goles_local_real != null)
       );
+      console.log("🔍 loadRanking — all pronosticos for user:", misPronsMiosData?.length, misPronsMiosData);
       const misPronsUnicos = Array.from(
         buildMisPronsByPartido(misPronsMiosData).values()
       );
+      console.log("🔍 loadRanking — unique pronosticos (latest per partido):", misPronsUnicos);
 
       setMisJornadas(jornadasConRes);
       setAllPartidos(allPts || []);
@@ -311,14 +314,22 @@ export default function UserPanel({ user, onLogout }) {
     setSelectedJornada(jornada);
     setPronosticos({}); setSavedPronosticos({});
 
+    console.log("🔍 selectJornada — user:", user);
+    console.log("🔍 selectJornada — jornada:", jornada);
+
     const { data: pts } = await supabase.from("partidos").select("*")
       .eq("jornada_id", jornada.id).order("orden");
+    console.log("🔍 selectJornada — partidos found:", pts?.length, pts);
     setPartidos(ordenarPartidosPorFecha(pts || []));
 
-    const { data: prons } = await supabase.from("pronosticos").select("*")
+    const { data: prons, error: pronsError } = await supabase.from("pronosticos").select("*")
       .eq("jornada_id", jornada.id).eq("usuario_id", user.id);
+    console.log("🔍 selectJornada — pronosticos query error:", pronsError);
+    console.log("🔍 selectJornada — pronosticos raw from DB:", prons);
+    console.log("🔍 selectJornada — pronosticos count:", prons?.length);
     const map = {};
     (prons || []).forEach(p => { map[p.partido_id] = { local: p.goles_local, visitante: p.goles_visitante }; });
+    console.log("🔍 selectJornada — pronosticos map:", map);
     setPronosticos(map); setSavedPronosticos(map);
     setLoadingJornada(false);
   };

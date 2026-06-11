@@ -2,6 +2,7 @@ import { createClient as createInsforgeClient } from "@insforge/sdk";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 const provider = import.meta.env.VITE_BACKEND || "insforge";
+console.log("🔌 DB provider:", provider === "supabase" ? "SUPABASE" : "INSFORGE");
 
 let db;
 if (provider === "supabase") {
