@@ -119,6 +119,7 @@ export default function UserPanel({ user, onLogout }) {
   const [rankingSubTab, setRankingSubTab]   = useState("global");
   const [jornadas, setJornadas]             = useState([]);
   const [jornadaPartidos, setJornadaPartidos] = useState({});
+  const [jornadaPronsFilled, setJornadaPronsFilled] = useState({});
   const [selectedJornada, setSelectedJornada] = useState(null);
   const [partidos, setPartidos]             = useState([]);
   const [pronosticos, setPronosticos]       = useState({});
@@ -198,6 +199,19 @@ export default function UserPanel({ user, onLogout }) {
         map[p.jornada_id].push(p);
       });
       setJornadaPartidos(map);
+
+      const { data: misProns } = await supabase
+        .from("pronosticos")
+        .select("jornada_id, partido_id, goles_local, goles_visitante")
+        .eq("usuario_id", user.id)
+        .in("jornada_id", js.map(j => j.id));
+      const filledCount = {};
+      (misProns || []).forEach(p => {
+        if (p.goles_local != null && p.goles_visitante != null) {
+          filledCount[p.jornada_id] = (filledCount[p.jornada_id] || 0) + 1;
+        }
+      });
+      setJornadaPronsFilled(filledCount);
     }
     setLoading(false);
   };
@@ -300,9 +314,8 @@ export default function UserPanel({ user, onLogout }) {
   }, [user.id]);
 
   useEffect(() => { 
-    fetchJornadas(); 
-    fetchPagoInfo();
-  }, [fetchPagoInfo]);
+    if (user?.id) { fetchJornadas(); fetchPagoInfo(); }
+  }, [user?.id, fetchPagoInfo]);
 
   // Cuando cambia al tab de puntos/ranking, cargar datos
   useEffect(() => {
@@ -522,6 +535,8 @@ export default function UserPanel({ user, onLogout }) {
                     const pts = jornadaPartidos[j.id] || [];
                     const st  = jornadaStatus(pts);
                     const openCount = pts.filter(p => !p.fecha_limite || new Date(p.fecha_limite) > new Date()).length;
+                    const filled = jornadaPronsFilled[j.id] || 0;
+                    const pct = pts.length > 0 ? Math.round((filled / pts.length) * 100) : 0;
                     return (
                       <div key={j.id} className={`user-jornada-card ${st}`}
                         onClick={() => selectJornada(j)}
@@ -535,6 +550,14 @@ export default function UserPanel({ user, onLogout }) {
                               {st === "partial" && ` · ${openCount} abierto${openCount !== 1 ? "s" : ""}`}
                               {st === "all-closed" && " · todos cerrados"}
                             </span>
+                            {pts.length > 0 && (
+                              <div className="ujc-progress-wrap">
+                                <div className="ujc-progress-bar">
+                                  <div className="ujc-progress-fill" style={{ width: `${pct}%` }} />
+                                </div>
+                                <span className="ujc-progress-label">{filled}/{pts.length}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="ujc-right">

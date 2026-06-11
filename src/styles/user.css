@@ -219,6 +219,12 @@
 .progress-bar-track { height: 4px; background: rgba(255,255,255,0.08); border-radius: 100px; overflow: hidden; }
 .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 100px; transition: width 0.4s cubic-bezier(0.16,1,0.3,1); }
 
+/* ── PROGRESS EN CARD DE JORNADA ── */
+.ujc-progress-wrap { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.ujc-progress-bar { flex: 1; height: 4px; background: rgba(255,255,255,0.08); border-radius: 100px; overflow: hidden; }
+.ujc-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 100px; transition: width 0.4s cubic-bezier(0.16,1,0.3,1); }
+.ujc-progress-label { font-size: 10px; font-weight: 700; color: var(--text-dimmer); white-space: nowrap; min-width: 28px; text-align: right; }
+
 /* ── PARTIDO ROW ── */
 .partidos-list { display: flex; flex-direction: column; gap: 8px; }
 
