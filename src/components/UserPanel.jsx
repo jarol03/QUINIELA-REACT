@@ -379,19 +379,28 @@ export default function UserPanel({ user, onLogout }) {
       });
 
       // 3. Ejecutar cambios en la DB
-      if (toDeleteIds.length > 0) {
+      // Primero eliminar los que el usuario dejó completamente vacíos
+      const emptyIds = openPartidos
+        .filter(p => {
+          const v = pronosticos[p.id];
+          return String(v?.local ?? "").trim() === "" && String(v?.visitante ?? "").trim() === "";
+        })
+        .map(p => p.id);
+
+      if (emptyIds.length > 0) {
         const { error: delErr } = await supabase
           .from("pronosticos")
           .delete()
           .eq("usuario_id", user.id)
-          .in("partido_id", toDeleteIds);
+          .in("partido_id", emptyIds);
         if (delErr) throw delErr;
       }
 
+      // Usar upsert para los que tienen ambos campos llenos (evita race condition delete+insert)
       if (toInsert.length > 0) {
         const { error: insErr } = await supabase
           .from("pronosticos")
-          .insert(toInsert);
+          .upsert(toInsert, { onConflict: "usuario_id, partido_id" });
         if (insErr) throw insErr;
       }
 
@@ -418,7 +427,9 @@ export default function UserPanel({ user, onLogout }) {
       });
 
       if (incompletos.length > 0) {
-        showToast(`Se guardaron ${toInsert.length} partidos. Pero ${incompletos.length} quedaron incompletos y no se guardaron.`, "error");
+        const nombres = incompletos.map(p => `${p.equipo_local}-${p.equipo_visitante}`).join(", ");
+        console.warn("⚠️ Partidos incompletos (no se guardaron):", nombres);
+        showToast(`Se guardaron ${toInsert.length} partidos. ${incompletos.length} incompletos: ${nombres}`, "error");
       } else {
         showToast(toInsert.length > 0 ? `¡${toInsert.length} pronósticos guardados!` : "Cambios guardados correctamente.", "success");
       }
