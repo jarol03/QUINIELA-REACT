@@ -391,6 +391,13 @@ export default function UserPanel({ user, onLogout }) {
         }
       });
 
+      // DEBUG: verificar cuántos van a insertar
+      console.log("💾 handleSave — openPartidos:", openPartidos.length, "toInsert:", toInsert.length);
+      if (openPartidos.length !== toInsert.length) {
+        const missing = openPartidos.filter(p => !toInsert.find(i => i.partido_id === p.id));
+        console.warn("💾 handleSave — partidos NO incluidos en toInsert:", missing.map(p => `${p.equipo_local}-${p.equipo_visitante} (id:${p.id})`).join(", "));
+      }
+
       // 3. Ejecutar cambios en la DB
       // Primero eliminar los que el usuario dejó completamente vacíos
       const emptyIds = openPartidos
@@ -906,11 +913,13 @@ const PartidoRow = memo(function PartidoRow({ partido: p, index: i, value: val, 
         <input className={`score-input ${closed ? "score-input-saved" : ""} ${isSaved && !isModified && !closed ? "score-input-ok" : ""}`}
           type="number" min="0" inputMode="numeric"
           value={val.local ?? ""} onChange={e => onChange(p.id, "local", e.target.value)}
+          onBlur={e => onChange(p.id, "local", e.target.value)}
           disabled={closed} placeholder="0" />
         <span className="score-dash">–</span>
         <input className={`score-input ${closed ? "score-input-saved" : ""} ${isSaved && !isModified && !closed ? "score-input-ok" : ""}`}
           type="number" min="0" inputMode="numeric"
           value={val.visitante ?? ""} onChange={e => onChange(p.id, "visitante", e.target.value)}
+          onBlur={e => onChange(p.id, "visitante", e.target.value)}
           disabled={closed} placeholder="0" />
       </div>
 
