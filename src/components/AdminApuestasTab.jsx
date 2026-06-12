@@ -311,7 +311,7 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
       <div className="admin-grupo-header" onClick={onToggle}>
         <div className="admin-grupo-header-left">
           <div className={`grupo-card-dot ${est.cls}`} />
-          <div>
+          <div className="admin-grupo-info">
             <div className="admin-grupo-nombre">{grupo.nombre}</div>
             <div className="admin-grupo-meta">
               {apuestas.length} apuesta{apuestas.length !== 1 ? "s" : ""} · Dinero: {fmtL(pozoTotal)}

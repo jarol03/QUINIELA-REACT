@@ -302,7 +302,9 @@ body {
   font-weight: 700;
   text-align: center;
   outline: none;
+  -webkit-appearance: textfield;
   -moz-appearance: textfield;
+  appearance: textfield;
   transition: all 0.2s;
 }
 .score-input::-webkit-outer-spin-button,

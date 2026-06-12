@@ -123,6 +123,7 @@ export default function UserPanel({ user, onLogout }) {
   const [selectedJornada, setSelectedJornada] = useState(null);
   const [partidos, setPartidos]             = useState([]);
   const [pronosticos, setPronosticos]       = useState({});
+  const pronosticosRef                      = useRef({});
   const [savedPronosticos, setSavedPronosticos] = useState({});
   const [saving, setSaving]                 = useState(false);
   const [loadingJornada, setLoadingJornada] = useState(false);
@@ -343,13 +344,17 @@ export default function UserPanel({ user, onLogout }) {
     const map = {};
     (prons || []).forEach(p => { map[p.partido_id] = { local: p.goles_local, visitante: p.goles_visitante }; });
     console.log("🔍 selectJornada — pronosticos map:", map);
-    setPronosticos(map); setSavedPronosticos(map);
+    setPronosticos(map); setSavedPronosticos(map); pronosticosRef.current = map;
     setLoadingJornada(false);
   };
 
   const handleChange = useCallback((partidoId, team, value) => {
     const val = value === "" ? "" : Math.max(0, parseInt(value, 10) || 0);
-    setPronosticos(prev => ({ ...prev, [partidoId]: { ...prev[partidoId], [team]: val } }));
+    setPronosticos(prev => {
+      const next = { ...prev, [partidoId]: { ...prev[partidoId], [team]: val } };
+      pronosticosRef.current = next;
+      return next;
+    });
   }, []);
 
   const handleSave = async () => {
@@ -371,7 +376,7 @@ export default function UserPanel({ user, onLogout }) {
       const toDeleteIds = [];
 
       openPartidos.forEach(p => {
-        const v = pronosticos[p.id];
+        const v = pronosticosRef.current[p.id];
         const valLocal = String(v?.local ?? "").trim();
         const valVisit = String(v?.visitante ?? "").trim();
 
@@ -402,7 +407,7 @@ export default function UserPanel({ user, onLogout }) {
       // Primero eliminar los que el usuario dejó completamente vacíos
       const emptyIds = openPartidos
         .filter(p => {
-          const v = pronosticos[p.id];
+          const v = pronosticosRef.current[p.id];
           return String(v?.local ?? "").trim() === "" && String(v?.visitante ?? "").trim() === "";
         })
         .map(p => p.id);
@@ -420,7 +425,7 @@ export default function UserPanel({ user, onLogout }) {
       if (toInsert.length > 0) {
         const { error: insErr } = await supabase
           .from("pronosticos")
-          .upsert(toInsert, { onConflict: "usuario_id, partido_id" });
+          .upsert(toInsert, { onConflict: "usuario_id,partido_id" });
         if (insErr) throw insErr;
       }
 
@@ -440,7 +445,7 @@ export default function UserPanel({ user, onLogout }) {
 
       // Alertas para los que no se pudieron guardar por estar incompletos (ej: solo local lleno)
       const incompletos = openPartidos.filter(p => {
-        const v = pronosticos[p.id];
+        const v = pronosticosRef.current[p.id];
         const l = String(v?.local ?? "").trim();
         const vis = String(v?.visitante ?? "").trim();
         return (l !== "" && vis === "") || (l === "" && vis !== "");
@@ -851,7 +856,7 @@ export default function UserPanel({ user, onLogout }) {
         </button>
         <button className={`ubn-item ${tab === "puntos" ? "active" : ""}`} onClick={() => setTab("puntos")}>
           <span className="ubn-icon">📊</span>
-          <span className="ubn-label">Mis Puntos</span>
+          <span className="ubn-label">Puntos</span>
         </button>
         <button className={`ubn-item ${tab === "final" ? "active" : ""}`} onClick={() => setTab("final")}>
           <span className="ubn-icon">🏆</span>
@@ -911,15 +916,13 @@ const PartidoRow = memo(function PartidoRow({ partido: p, index: i, value: val, 
 
       <div className="score-inputs">
         <input className={`score-input ${closed ? "score-input-saved" : ""} ${isSaved && !isModified && !closed ? "score-input-ok" : ""}`}
-          type="number" min="0" inputMode="numeric"
+          type="text" inputMode="numeric" pattern="[0-9]*"
           value={val.local ?? ""} onChange={e => onChange(p.id, "local", e.target.value)}
-          onBlur={e => onChange(p.id, "local", e.target.value)}
           disabled={closed} placeholder="0" />
         <span className="score-dash">–</span>
         <input className={`score-input ${closed ? "score-input-saved" : ""} ${isSaved && !isModified && !closed ? "score-input-ok" : ""}`}
-          type="number" min="0" inputMode="numeric"
+          type="text" inputMode="numeric" pattern="[0-9]*"
           value={val.visitante ?? ""} onChange={e => onChange(p.id, "visitante", e.target.value)}
-          onBlur={e => onChange(p.id, "visitante", e.target.value)}
           disabled={closed} placeholder="0" />
       </div>
 

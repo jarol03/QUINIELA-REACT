@@ -119,6 +119,8 @@ function GrupoDetail({ grupo, user, onBack, showToast }) {
   const [miApuesta, setMiApuesta]       = useState(null);
   const [montoInput, setMontoInput]     = useState("");
   const [saving, setSaving]             = useState(false);
+  const [ranking, setRanking]           = useState([]);
+  const [jornadasNombres, setJornadasNombres] = useState("");
 
   const fetchDetalle = useCallback(async () => {
     setLoading(true);
@@ -126,22 +128,62 @@ function GrupoDetail({ grupo, user, onBack, showToast }) {
       { data: apData },
       { data: ganData },
       { data: usrData },
+      { data: rankData },
+      { data: jData },
     ] = await Promise.all([
       supabase.from("apuestas").select("*").eq("grupo_id", grupo.id),
       supabase.from("ganadores_apuesta").select("*").eq("grupo_id", grupo.id),
       supabase.from("usuarios").select("id, username, nombre").order("username"),
+      (grupo.jornadas && grupo.jornadas.length > 0)
+        ? supabase.from("ranking_jornada_view").select("*").in("jornada_id", grupo.jornadas)
+        : Promise.resolve({ data: [] }),
+      (grupo.jornadas && grupo.jornadas.length > 0)
+        ? supabase.from("jornadas").select("id, nombre").in("id", grupo.jornadas)
+        : Promise.resolve({ data: [] })
     ]);
 
     const ap = apData || [];
     setApuestas(ap);
     setGanadores(ganData || []);
-    setUsuarios(usrData || []);
+    
+    const usrs = usrData || [];
+    setUsuarios(usrs);
+
+    // Calcular ranking
+    const rankMap = {};
+    (rankData || []).forEach(row => {
+      if (!rankMap[row.usuario_id]) rankMap[row.usuario_id] = 0;
+      rankMap[row.usuario_id] += row.pts;
+    });
+
+    const rankingArr = ap.map(a => {
+      const u = usrs.find(u => u.id === a.usuario_id);
+      return {
+        ...a,
+        nombre: u?.nombre || u?.username || "—",
+        pts: rankMap[a.usuario_id] || 0
+      };
+    }).sort((a, b) => b.pts - a.pts);
+
+    // Añadir posiciones
+    let posActual = 1;
+    for (let i = 0; i < rankingArr.length; i++) {
+      if (i === 0) { rankingArr[i].pos = 1; }
+      else {
+        if (rankingArr[i].pts !== rankingArr[i - 1].pts) posActual = rankingArr[i - 1].pos + 1;
+        rankingArr[i].pos = posActual;
+      }
+    }
+    setRanking(rankingArr);
+
+    const nombres = (jData || []).map(j => j.nombre).join(", ");
+    setJornadasNombres(nombres);
 
     const mia = ap.find((a) => a.usuario_id === user.id);
     setMiApuesta(mia || null);
     setMontoInput(mia ? String(mia.monto) : "");
     setLoading(false);
-  }, [grupo.id, user.id]);
+  }, [grupo.id, grupo.jornadas, user.id]);
 
   useEffect(() => { fetchDetalle(); }, [fetchDetalle]);
 
@@ -389,6 +431,46 @@ function GrupoDetail({ grupo, user, onBack, showToast }) {
             )}
           </div>
         </div>
+
+        {/* Tabla de Ranking por Puntos */}
+        {apuestas.length > 0 && ranking.length > 0 && (
+          <div className="apuesta-ranking-card">
+            <div className="apuesta-ranking-title">
+              🏆 Ranking de Puntos
+              {jornadasNombres && <span className="apuesta-ranking-subtitle"> ({jornadasNombres})</span>}
+            </div>
+            <table className="liquidacion-table">
+              <thead>
+                <tr>
+                  <th>Pos</th>
+                  <th>Jugador</th>
+                  <th>Puntos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ranking.map((r) => {
+                  const esYo = r.usuario_id === user.id;
+                  let emoji = "";
+                  if (r.pts > 0) {
+                    if (r.pos === 1) emoji = "🥇";
+                    else if (r.pos === 2) emoji = "🥈";
+                    else if (r.pos === 3) emoji = "🥉";
+                  }
+                  return (
+                    <tr key={r.usuario_id} className={esYo ? "liq-row-yo" : ""}>
+                      <td style={{ fontWeight: "bold", textAlign: "center" }}>{emoji || r.pos}</td>
+                      <td>
+                        {r.nombre}
+                        {esYo && <span style={{ color: "#818cf8", fontSize: "0.75rem", marginLeft: "4px" }}>(tú)</span>}
+                      </td>
+                      <td style={{ fontWeight: "bold", color: "var(--accent)" }}>{r.pts} pts</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
       </div>
     </div>

@@ -191,7 +191,9 @@
   font-weight: 600;
   outline: none;
   transition: all 0.2s;
+  -webkit-appearance: textfield;
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 .apuesta-monto-input::-webkit-outer-spin-button,
 .apuesta-monto-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -260,6 +262,28 @@
   letter-spacing: 0.06em;
   padding: 16px 18px 12px;
   border-bottom: 1px solid var(--glass-border);
+}
+.apuesta-ranking-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.apuesta-ranking-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--glass-border);
+}
+.apuesta-ranking-subtitle {
+  text-transform: none;
+  font-weight: 500;
+  color: var(--text-dimmer);
+  font-size: 0.75rem;
+  letter-spacing: normal;
 }
 .apuesta-participantes-list {
   display: flex;
@@ -755,6 +779,12 @@
   flex: 1;
   min-width: 0;
 }
+.admin-grupo-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
 .admin-grupo-nombre {
   font-size: 0.95rem;
   font-weight: 600;
@@ -766,10 +796,12 @@
 .admin-grupo-meta {
   font-size: 0.75rem;
   color: rgba(240,244,255,0.4);
-  margin-top: 2px;
-  white-space: nowrap;
+  margin-top: 4px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 .admin-grupo-actions {
   display: flex;
