@@ -169,6 +169,8 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
   const [saving, setSaving]             = useState(false);
   const [isEditingParticipants, setIsEditingParticipants] = useState(false);
   const [editParticipantes, setEditParticipantes] = useState(grupo.participantes || []);
+  const [isEditingJornadas, setIsEditingJornadas] = useState(false);
+  const [editJornadas, setEditJornadas] = useState(grupo.jornadas || []);
 
   const fetchDetail = useCallback(async () => {
     setLoadingDetail(true);
@@ -276,6 +278,27 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
     setSaving(false);
   };
 
+  const guardarJornadas = async () => {
+    if (editJornadas.length === 0) {
+      showToast("Debes seleccionar al menos una jornada", "error");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("grupos_apuesta")
+      .update({ jornadas: editJornadas })
+      .eq("id", grupo.id);
+    
+    if (!error) {
+      showToast("Jornadas actualizadas ✓");
+      setIsEditingJornadas(false);
+      onRefresh();
+    } else {
+      showToast("Error al guardar jornadas", "error");
+    }
+    setSaving(false);
+  };
+
   // ── Preview de cálculo ─────────────────────────────────────────────
   const previewData = (() => {
     if (apuestas.length === 0 || ganadores.length === 0) return null;
@@ -337,6 +360,40 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
             </div>
           ) : (
             <>
+              {/* Jornadas (Admin) */}
+              {grupo.estado === "abierto" && (
+                <div>
+                  <p className="admin-grupo-section-label">
+                    Gestión de Jornadas
+                  </p>
+                  
+                  {isEditingJornadas ? (
+                    <div className="admin-edit-section">
+                      <JornadasSelector 
+                        jornadas={jornadas} 
+                        selectedIds={editJornadas} 
+                        onChange={setEditJornadas} 
+                      />
+                      <div className="admin-edit-actions">
+                        <button className="admin-btn-primary" onClick={guardarJornadas} disabled={saving}>
+                          {saving ? "Guardando..." : "✓ Guardar cambios"}
+                        </button>
+                        <button className="admin-btn-secondary" onClick={() => { setIsEditingJornadas(false); setEditJornadas(grupo.jornadas || []); }} disabled={saving}>
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button className="admin-grupo-edit-btn" onClick={() => {
+                      setEditJornadas(grupo.jornadas || []);
+                      setIsEditingJornadas(true);
+                    }}>
+                      ✏️ Editar jornadas ({(grupo.jornadas || []).length})
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Participantes permitidos (Admin) */}
               {grupo.estado === "abierto" && (
                 <div>
@@ -361,7 +418,10 @@ function GrupoAdminCard({ grupo, usuarios, jornadas, isExpanded, onToggle, onRef
                       </div>
                     </div>
                   ) : (
-                    <button className="admin-grupo-edit-btn" onClick={() => setIsEditingParticipants(true)}>
+                    <button className="admin-grupo-edit-btn" onClick={() => {
+                      setEditParticipantes(grupo.participantes || []);
+                      setIsEditingParticipants(true);
+                    }}>
                       ✏️ Editar participantes permitidos ({totalParticipantes})
                     </button>
                   )}
