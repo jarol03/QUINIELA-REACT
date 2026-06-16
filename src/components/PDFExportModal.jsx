@@ -200,8 +200,17 @@ export default function PDFExportModal({
           const centerY = rowTop + rowH / 2;
           const textY = centerY + fs.row * 0.15;
 
-          // Fondo cebra
-          if (ri % 2 === 0) {
+          // Fondo basado en chances o cebra
+          if (row.chances === "zona") {
+            doc.setFillColor(0, 35, 22);
+            doc.rect(cx, rowTop, colW, rowH, "F");
+          } else if (row.chances === "con") {
+            doc.setFillColor(30, 27, 12);
+            doc.rect(cx, rowTop, colW, rowH, "F");
+          } else if (row.chances === "sin") {
+            doc.setFillColor(25, 20, 22);
+            doc.rect(cx, rowTop, colW, rowH, "F");
+          } else if (ri % 2 === 0) {
             doc.setFillColor(20, 25, 42);
             doc.rect(cx, rowTop, colW, rowH, "F");
           }
@@ -218,36 +227,35 @@ export default function PDFExportModal({
             doc.setFontSize(fs.row - 1);
             doc.setFont("helvetica", "bold");
 
-            // Colores Oro, Plata y Bronce solo para el top 3 GLOBAL
-            doc.setTextColor(
-              globalIndex === 0
-                ? 251
-                : globalIndex === 1
-                  ? 192
-                  : globalIndex === 2
-                    ? 180
-                    : 90,
-              globalIndex === 0
-                ? 191
-                : globalIndex === 1
-                  ? 192
-                  : globalIndex === 2
-                    ? 100
-                    : 105,
-              globalIndex === 0
-                ? 36
-                : globalIndex === 1
-                  ? 192
-                  : globalIndex === 2
-                    ? 60
-                    : 140,
-            );
+            // Colores según chances (jornada) o posición global
+            if (row.chances === "zona") {
+              const p = row.pos || globalIndex + 1;
+              doc.setTextColor(
+                p <= 1 ? 251 : p <= 2 ? 192 : 180,
+                p <= 1 ? 191 : p <= 2 ? 192 : 100,
+                p <= 1 ? 36  : p <= 2 ? 192 : 60,
+              );
+            } else if (row.chances === "con") {
+              doc.setTextColor(251, 191, 36);
+            } else if (row.chances === "sin") {
+              doc.setTextColor(120, 80, 90);
+            } else {
+              doc.setTextColor(
+                globalIndex === 0 ? 251 : globalIndex === 1 ? 192 : globalIndex === 2 ? 180 : 90,
+                globalIndex === 0 ? 191 : globalIndex === 1 ? 192 : globalIndex === 2 ? 100 : 105,
+                globalIndex === 0 ? 36  : globalIndex === 1 ? 192 : globalIndex === 2 ? 60  : 140,
+              );
+            }
 
             doc.text(medal, cx + 2, textY, { align: "center" });
 
             // Datos del Participante
             doc.setFont("helvetica", "bold");
-            doc.setTextColor(220, 230, 248);
+            if (row.chances === "sin") {
+              doc.setTextColor(150, 150, 170);
+            } else {
+              doc.setTextColor(220, 230, 248);
+            }
             doc.setFontSize(fs.row);
             const nm = row.nombre || row.username || "";
             doc.text(truncateText(doc, nm, colW * 0.45), cx + 6, nameY);
@@ -262,7 +270,15 @@ export default function PDFExportModal({
             // Puntajes
             doc.setFontSize(fs.name);
             doc.setFont("helvetica", "bold");
-            doc.setTextColor(0, 210, 140);
+            if (row.chances === "zona") {
+              doc.setTextColor(0, 210, 140);
+            } else if (row.chances === "con") {
+              doc.setTextColor(251, 191, 36);
+            } else if (row.chances === "sin") {
+              doc.setTextColor(100, 80, 90);
+            } else {
+              doc.setTextColor(0, 210, 140);
+            }
 
             if (showExtraCols) {
               doc.text(String(row.pts ?? 0), cx + colW * 0.55, textY, {

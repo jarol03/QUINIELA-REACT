@@ -195,9 +195,21 @@ export default function PuntosTab() {
       .sort((a, b) => b.pts - a.pts)
   );
 
-  const pdfDataJornada = tablaJornada.map(u => ({
+  const sinResPts = partidos.filter((p) => p.goles_local_real == null);
+  const maxExtraPts = sinResPts.length * 3;
+  const top3PtsArr = tablaJornada.filter((u) => u.posReal <= 3).map((u) => u.pts);
+  const thresholdPts = top3PtsArr.length > 0 ? Math.min(...top3PtsArr) : 0;
+
+  const tablaJornadaConChances = tablaJornada.map((u) => {
+    if (u.posReal <= 3 && u.pts > 0) return { ...u, chances: "zona" };
+    if (sinResPts.length === 0) return { ...u, chances: "sin" };
+    if ((u.pts + maxExtraPts) >= thresholdPts) return { ...u, chances: "con" };
+    return { ...u, chances: "sin" };
+  });
+
+  const pdfDataJornada = tablaJornadaConChances.map(u => ({
     nombre: u.nombre || u.username, username: u.username,
-    pts: u.pts, exactos: u.exactos, resultados: u.resultados, pos: u.posReal,
+    pts: u.pts, exactos: u.exactos, resultados: u.resultados, pos: u.posReal, chances: u.chances,
   }));
 
   const pdfDataGlobal = globalData.map(u => ({
@@ -317,7 +329,7 @@ export default function PuntosTab() {
                       </tr>
                     </thead>
                     <tbody>
-                      {tablaJornada.map(u => (
+                      {tablaJornadaConChances.map(u => (
                         <tr key={u.id} className={u.posReal === 1 && u.pts > 0 ? "tp-leader" : ""}>
                           <td className="tp-pos-cell">{medalPos(u.posReal, u.pts)}</td>
                           <td className="tp-user-cell">
