@@ -894,6 +894,16 @@ const PartidoRow = memo(function PartidoRow({ partido: p, index: i, value: val, 
   const isFilled     = val.local !== "" && val.local !== undefined && val.visitante !== "" && val.visitante !== undefined;
   const isModified   = isSaved && (String(val.local) !== String(saved.local) || String(val.visitante) !== String(saved.visitante));
 
+  // Chrome mobile: when the virtual keyboard opens it shrinks the viewport and
+  // the fixed bottom-nav may cover the last partido inputs. After a short delay
+  // (so the keyboard is fully open), scroll this input into view.
+  const handleFocus = (e) => {
+    const el = e.target;
+    setTimeout(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 350);
+  };
+
   return (
     <div className={`partido-row ${closed ? "partido-readonly" : ""} ${isSaved && !isModified ? "partido-saved" : ""} ${isModified ? "partido-modified" : ""}`}
       style={{ animationDelay: `${animDelay}s` }}>
@@ -918,11 +928,13 @@ const PartidoRow = memo(function PartidoRow({ partido: p, index: i, value: val, 
         <input className={`score-input ${closed ? "score-input-saved" : ""} ${isSaved && !isModified && !closed ? "score-input-ok" : ""}`}
           type="text" inputMode="numeric" pattern="[0-9]*"
           value={val.local ?? ""} onChange={e => onChange(p.id, "local", e.target.value)}
+          onFocus={handleFocus}
           disabled={closed} placeholder="0" />
         <span className="score-dash">–</span>
         <input className={`score-input ${closed ? "score-input-saved" : ""} ${isSaved && !isModified && !closed ? "score-input-ok" : ""}`}
           type="text" inputMode="numeric" pattern="[0-9]*"
           value={val.visitante ?? ""} onChange={e => onChange(p.id, "visitante", e.target.value)}
+          onFocus={handleFocus}
           disabled={closed} placeholder="0" />
       </div>
 
