@@ -58,9 +58,6 @@ export default function PuntosTab() {
   const [loadingGlobal, setLoadingGlobal] = useState(false);
   const [globalPdfOpen, setGlobalPdfOpen] = useState(false);
   const tableRef = useRef(null);
-  const editResRef = useRef(editRes);
-  editResRef.current = editRes;
-  const autoTimerRef = useRef({});
 
   useEffect(() => { fetchJornadas(); }, []);
 
@@ -150,38 +147,17 @@ export default function PuntosTab() {
   }, [innerTab]);
 
   // ── Resultados ──────────────────────────────────────────────────────────
-  const saveResultado = async (partidoId, local, visitante) => {
-    if (local === "" || visitante === "") return;
+  const saveResultado = async (partidoId) => {
+    const r = editRes[partidoId];
+    if (r.local === "" || r.visitante === "") return;
     setSaving(partidoId);
-    await supabase.from("partidos").update({ goles_local_real: Number(local), goles_visitante_real: Number(visitante) }).eq("id", partidoId);
+    await supabase.from("partidos").update({ goles_local_real: Number(r.local), goles_visitante_real: Number(r.visitante) }).eq("id", partidoId);
     const { data } = await supabase.from("partidos").select("*").eq("jornada_id", selectedJ.id).order("orden");
     setPartidos(ordenarPartidosPorFecha(data || []));
     setEditingIds(prev => { const s = new Set(prev); s.delete(partidoId); return s; });
     setSaving(null);
     showToast("Resultado guardado ✓");
   };
-
-  // ── Auto-save ───────────────────────────────────────────────────────────
-  useEffect(() => {
-    const timers = autoTimerRef.current;
-    Object.entries(editRes).forEach(([id, s]) => {
-      if (!s.local || !s.visitante) return;
-      if (saving === id) return;
-      const p = partidos.find(x => x.id === id);
-      if (p && String(p.goles_local_real) === s.local && String(p.goles_visitante_real) === s.visitante) return;
-      if (timers[id]) clearTimeout(timers[id]);
-      timers[id] = setTimeout(() => {
-        const scores = editResRef.current[id];
-        if (scores?.local && scores?.visitante) saveResultado(id, scores.local, scores.visitante);
-        delete timers[id];
-      }, 1500);
-    });
-    Object.keys(timers).forEach(id => {
-      const s = editRes[id];
-      if (!s || !s.local || !s.visitante) { clearTimeout(timers[id]); delete timers[id]; }
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editRes, saving, partidos]);
 
   const clearResultado = async (partidoId) => {
     if (!confirm("¿Quitar el resultado? Los puntos de este partido quedarán en cero.")) return;
@@ -310,7 +286,7 @@ export default function PuntosTab() {
                             <span className="res-dash">–</span>
                             <input className="res-input" type="number" min="0" value={r.visitante}
                               onChange={e => setEditRes(prev => ({ ...prev, [p.id]: { ...prev[p.id], visitante: e.target.value } }))} placeholder="—" />
-                            <button className="res-save-btn" onClick={() => saveResultado(p.id, r.local, r.visitante)}
+                            <button className="res-save-btn" onClick={() => saveResultado(p.id)}
                               disabled={isSaving || r.local === "" || r.visitante === ""}>
                               {isSaving ? "..." : "Guardar"}
                             </button>

@@ -140,6 +140,12 @@ export default function UserPanel({ user, onLogout }) {
   const [pagoInfo, setPagoInfo]                 = useState({ pagado: false, monto_pagado: 0 });
 
   const debugLog = useRef([]);
+  const autoTimerRef = useRef(null);
+  const autoSaveRef = useRef(null);
+  const partidosRef = useRef(partidos);
+  partidosRef.current = partidos;
+  const selectedJornadaRef = useRef(selectedJornada);
+  selectedJornadaRef.current = selectedJornada;
 
   // Debug listener persistente
   useEffect(() => {
@@ -469,6 +475,52 @@ export default function UserPanel({ user, onLogout }) {
       setSaving(false);
     }
   };
+
+  // ── Auto-save ligero (solo upsert, sin delete) ─────────────────────────
+  const autoSave = async () => {
+    const open = partidosRef.current.filter(p => !isPartidoClosed(p));
+    const toInsert = [];
+    open.forEach(p => {
+      const v = pronosticosRef.current[p.id];
+      const loc = String(v?.local ?? "").trim();
+      const vis = String(v?.visitante ?? "").trim();
+      if (loc !== "" && vis !== "") {
+        toInsert.push({
+          usuario_id: user.id,
+          jornada_id: selectedJornadaRef.current.id,
+          partido_id: p.id,
+          goles_local: parseInt(loc, 10),
+          goles_visitante: parseInt(vis, 10),
+        });
+      }
+    });
+    if (toInsert.length === 0) return;
+    try {
+      await supabase.from("pronosticos").upsert(toInsert, { onConflict: "usuario_id,partido_id" });
+      setSavedPronosticos(prev => {
+        const next = { ...prev };
+        toInsert.forEach(ins => { next[ins.partido_id] = { local: ins.goles_local, visitante: ins.goles_visitante }; });
+        return next;
+      });
+    } catch (err) {
+      console.error("❌ auto-save error:", err);
+    }
+  };
+  autoSaveRef.current = autoSave;
+
+  // ── Auto-save effect ───────────────────────────────────────────────────
+  useEffect(() => {
+    const hasUnsaved = partidos.some(p => {
+      if (isPartidoClosed(p)) return false;
+      const cur = pronosticos[p.id];
+      const sav = savedPronosticos[p.id];
+      return String(cur?.local ?? "") !== String(sav?.local ?? "") || String(cur?.visitante ?? "") !== String(sav?.visitante ?? "");
+    });
+    if (!hasUnsaved || saving) return;
+    if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
+    autoTimerRef.current = setTimeout(() => autoSaveRef.current(), 2500);
+    return () => { if (autoTimerRef.current) clearTimeout(autoTimerRef.current); };
+  }, [pronosticos, savedPronosticos, saving, partidos]);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
