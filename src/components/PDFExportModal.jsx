@@ -208,7 +208,7 @@ export default function PDFExportModal({
             doc.setFillColor(30, 27, 12);
             doc.rect(cx, rowTop, colW, rowH, "F");
           } else if (row.chances === "sin") {
-            doc.setFillColor(25, 20, 22);
+            doc.setFillColor(35, 18, 24);
             doc.rect(cx, rowTop, colW, rowH, "F");
           } else if (ri % 2 === 0) {
             doc.setFillColor(20, 25, 42);
@@ -238,7 +238,7 @@ export default function PDFExportModal({
             } else if (row.chances === "con") {
               doc.setTextColor(251, 191, 36);
             } else if (row.chances === "sin") {
-              doc.setTextColor(120, 80, 90);
+              doc.setTextColor(220, 110, 130);
             } else {
               doc.setTextColor(
                 globalIndex === 0 ? 251 : globalIndex === 1 ? 192 : globalIndex === 2 ? 180 : 90,
@@ -252,7 +252,7 @@ export default function PDFExportModal({
             // Datos del Participante
             doc.setFont("helvetica", "bold");
             if (row.chances === "sin") {
-              doc.setTextColor(150, 150, 170);
+              doc.setTextColor(200, 180, 185);
             } else {
               doc.setTextColor(220, 230, 248);
             }
@@ -275,7 +275,7 @@ export default function PDFExportModal({
             } else if (row.chances === "con") {
               doc.setTextColor(251, 191, 36);
             } else if (row.chances === "sin") {
-              doc.setTextColor(100, 80, 90);
+              doc.setTextColor(255, 130, 150);
             } else {
               doc.setTextColor(0, 210, 140);
             }

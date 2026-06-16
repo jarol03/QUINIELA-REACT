@@ -105,16 +105,15 @@ export default function RankingJornada({ user }) {
 
     const tablaConPos = addPos(tablaBase);
 
-    // Umbral del top 3: mínimo de pts del 3er lugar actual
-    // (si hay empates en pos 3 tomamos el pts de ese grupo)
-    const top3Pts = tablaConPos.filter((u) => u.pos <= 3).map((u) => u.pts);
-    const threshold = top3Pts.length > 0 ? Math.min(...top3Pts) : 0;
+    // Umbral del top 1: pts del líder
+    const top1Pts = tablaConPos.filter((u) => u.pos <= 1).map((u) => u.pts);
+    const threshold = top1Pts.length > 0 ? Math.min(...top1Pts) : 0;
 
     // Asignar chances
     const tablaFinal = tablaConPos.map((u) => {
-      if (u.pos <= 3 && u.pts > 0) return { ...u, chances: "zona" }; // ya está
-      if (sinRes.length === 0) return { ...u, chances: "sin" }; // jornada cerrada
-      if (u.ptsMax >= threshold) return { ...u, chances: "con" }; // puede llegar
+      if (u.pos <= 1 && u.pts > 0) return { ...u, chances: "zona" };
+      if (sinRes.length === 0) return { ...u, chances: "sin" };
+      if (u.ptsMax >= threshold) return { ...u, chances: "con" };
       return { ...u, chances: "sin" };
     });
 

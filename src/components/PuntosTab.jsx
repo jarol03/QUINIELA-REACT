@@ -197,11 +197,11 @@ export default function PuntosTab() {
 
   const sinResPts = partidos.filter((p) => p.goles_local_real == null);
   const maxExtraPts = sinResPts.length * 3;
-  const top3PtsArr = tablaJornada.filter((u) => u.posReal <= 3).map((u) => u.pts);
-  const thresholdPts = top3PtsArr.length > 0 ? Math.min(...top3PtsArr) : 0;
+  const top1PtsArr = tablaJornada.filter((u) => u.posReal <= 1).map((u) => u.pts);
+  const thresholdPts = top1PtsArr.length > 0 ? Math.min(...top1PtsArr) : 0;
 
   const tablaJornadaConChances = tablaJornada.map((u) => {
-    if (u.posReal <= 3 && u.pts > 0) return { ...u, chances: "zona" };
+    if (u.posReal <= 1 && u.pts > 0) return { ...u, chances: "zona" };
     if (sinResPts.length === 0) return { ...u, chances: "sin" };
     if ((u.pts + maxExtraPts) >= thresholdPts) return { ...u, chances: "con" };
     return { ...u, chances: "sin" };
