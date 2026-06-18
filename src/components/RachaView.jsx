@@ -20,7 +20,18 @@ export default function RachaView({ user }) {
       fetchAllPaginated((from, to) => supabase.from("partidos").select("*").range(from, to)),
       fetchAllPaginated((from, to) => supabase.from("racha_pronosticos_view").select("*").range(from, to))
     ]);
-    setResultados(calcularRachas(usrs, allPts, allProns));
+
+    // Fetch pronósticos para partidos SIN resultado (para preview de "casi racha")
+    const sinResultadoIds = (allPts || [])
+      .filter(p => p.goles_local_real == null && p.fecha_limite)
+      .map(p => p.id);
+    let upcomingProns = [];
+    if (sinResultadoIds.length > 0) {
+      const { data } = await supabase.from("pronosticos").select("*").in("partido_id", sinResultadoIds);
+      upcomingProns = data || [];
+    }
+
+    setResultados(calcularRachas(usrs, allPts, allProns, upcomingProns));
     setLoading(false);
   };
 
@@ -61,7 +72,7 @@ export default function RachaView({ user }) {
                   <span className="rh-titulo">
                     {misRacha === 0 && "Sin racha activa"}
                     {misRacha === 1 && "⚡ 1 exacto seguido"}
-                    {misRacha === 2 && "🔥 ¡2 exactos seguidos! Un más..."}
+                    {misRacha === 2 && "🔥 ¡2 exactos seguidos! Uno más..."}
                   </span>
                   <span className="rh-sub">
                     {misRacha === 0 && "Acerta el próximo marcador para empezar una racha"}
@@ -70,6 +81,18 @@ export default function RachaView({ user }) {
                   </span>
                 </div>
               </>
+
+            )}
+            {misRacha === 2 && miData?.proximoExacto && (
+              <div className="rh-preview">
+                <span className="rh-preview-label">⏳ Pendiente de resultado:</span>
+                <span className="rh-preview-match">
+                  {miData.proximoExacto.partido.equipo_local} vs {miData.proximoExacto.partido.equipo_visitante}
+                </span>
+                <span className="rh-preview-score">
+                  Tu pronóstico: {miData.proximoExacto.pronostico.goles_local}–{miData.proximoExacto.pronostico.goles_visitante}
+                </span>
+              </div>
             )}
           </div>
 
@@ -111,8 +134,8 @@ export default function RachaView({ user }) {
             <div className="racha-tabla-header">
               <span className="col-label" style={{ marginBottom: 0 }}>Rachas actuales</span>
             </div>
-            {resultados.map(({ u, yaGano, rachaActual }) => (
-              <RachaRow key={u.id} u={u} yaGano={yaGano} rachaActual={rachaActual} yoId={user.id} showYo />
+            {resultados.map(({ u, yaGano, rachaActual, proximoExacto }) => (
+              <RachaRow key={u.id} u={u} yaGano={yaGano} rachaActual={rachaActual} proximoExacto={proximoExacto} yoId={user.id} showYo />
             ))}
           </div>
         </>

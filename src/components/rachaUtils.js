@@ -166,8 +166,33 @@ export function calcRachaActual(partidosOrdenados, pronsMap, yaGano) {
   return racha;
 }
 
+// Encuentra el partido sin resultado más reciente cuya fecha_limite ya venció
+// y para el cual el usuario tiene un pronóstico registrado.
+function findProximoExacto(rachaActual, yaGano, allPts, userUpcomingMap) {
+  if (yaGano || rachaActual < 1) return null;
+
+  const now = new Date();
+  const vencidosSinResultado = (allPts || []).filter(p =>
+    p.goles_local_real == null &&
+    p.fecha_limite &&
+    new Date(p.fecha_limite) < now
+  );
+
+  // Ordenar del más reciente al más antiguo
+  vencidosSinResultado.sort((a, b) => new Date(b.fecha_limite) - new Date(a.fecha_limite));
+
+  for (const p of vencidosSinResultado) {
+    const pron = userUpcomingMap?.[p.id];
+    if (pron && pron.goles_local != null && pron.goles_visitante != null) {
+      return { partido: p, pronostico: pron };
+    }
+  }
+  return null;
+}
+
 // Calcula el estado completo para todos los usuarios.
-export function calcularRachas(usrs, allPts, allProns) {
+// upcomingProns: pronósticos para partidos sin resultado aún (tabla pronosticos cruda).
+export function calcularRachas(usrs, allPts, allProns, upcomingProns = []) {
   const conRes = ordenarPartidos(allPts || []);
 
   // OPTIMIZACIÓN O(N): Agrupar todos los pronósticos por usuario de una sola pasada
@@ -186,12 +211,27 @@ export function calcularRachas(usrs, allPts, allProns) {
     }
   });
 
+  // Cache separado para pronósticos de partidos sin resultado
+  const userUpcomingCache = {};
+  (upcomingProns || []).forEach(pr => {
+    if (!userUpcomingCache[pr.usuario_id]) {
+      userUpcomingCache[pr.usuario_id] = {};
+    }
+    const userMap = userUpcomingCache[pr.usuario_id];
+    const prev = userMap[pr.partido_id];
+    if (!prev || new Date(pr.created_at || 0).getTime() >= new Date(prev.created_at || 0).getTime()) {
+      userMap[pr.partido_id] = pr;
+    }
+  });
+
   const data = (usrs || []).map(u => {
     const pronsMap = userPronsCache[u.id] || {};
+    const upcomingMap = userUpcomingCache[u.id] || {};
 
     const primeraRacha = detectarPrimeraRacha(conRes, pronsMap);
     const yaGano       = !!primeraRacha;
     const rachaActual  = calcRachaActual(conRes, pronsMap, yaGano);
+    const proximoExacto = findProximoExacto(rachaActual, yaGano, allPts, upcomingMap);
 
     const debugBloques = agruparPorFecha(conRes).map(bloque => {
       let exactos = 0;
@@ -212,7 +252,7 @@ export function calcularRachas(usrs, allPts, allProns) {
       };
     });
 
-    return { u, primeraRacha, yaGano, rachaActual, debugBloques };
+    return { u, primeraRacha, yaGano, rachaActual, proximoExacto, debugBloques };
   });
 
   data.conResDebug = conRes; // attach directly to array for global debug

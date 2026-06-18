@@ -855,6 +855,18 @@
 .racha-hero-ganador .rh-titulo { color: var(--gold); }
 .racha-hero-ganador .rh-sub    { color: rgba(251,191,36,0.7); }
 
+.rh-preview {
+  display: flex; flex-direction: column; gap: 2px;
+  width: 100%; margin-top: 8px;
+  padding: 10px 12px 8px;
+  background: rgba(255,107,138,0.06);
+  border: 1px solid rgba(255,107,138,0.15);
+  border-radius: 10px;
+}
+.rh-preview-label { font-size: 10px; font-weight: 700; color: var(--text-dimmer); letter-spacing: 1px; text-transform: uppercase; }
+.rh-preview-match { font-size: 14px; font-weight: 700; color: var(--text); }
+.rh-preview-score { font-size: 13px; font-weight: 600; color: var(--accent); }
+
 /* Ganadores en vista usuario */
 .racha-ganadores-user {
   background: rgba(251,191,36,0.07); border: 1px solid rgba(251,191,36,0.25);

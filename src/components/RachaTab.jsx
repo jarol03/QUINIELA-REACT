@@ -18,7 +18,18 @@ export default function RachaTab() {
       fetchAllPaginated((from, to) => supabase.from("partidos").select("*").range(from, to)),
       fetchAllPaginated((from, to) => supabase.from("racha_pronosticos_view").select("*").range(from, to))
     ]);
-    const res = calcularRachas(usrs, allPts, allProns);
+
+    // Fetch pronósticos para partidos SIN resultado (para el preview de "casi racha")
+    const sinResultadoIds = (allPts || [])
+      .filter(p => p.goles_local_real == null && p.fecha_limite)
+      .map(p => p.id);
+    let upcomingProns = [];
+    if (sinResultadoIds.length > 0) {
+      const { data } = await supabase.from("pronosticos").select("*").in("partido_id", sinResultadoIds);
+      upcomingProns = data || [];
+    }
+
+    const res = calcularRachas(usrs, allPts, allProns, upcomingProns);
     setResultados(res);
     
     // DEBUG DE TIEMPO PASADO
@@ -115,8 +126,8 @@ export default function RachaTab() {
             <div className="racha-tabla-header">
               <span className="col-label" style={{ marginBottom: 0 }}>Rachas actuales ({resultados.length})</span>
             </div>
-            {resultados.map(({ u, yaGano, rachaActual }) => (
-              <RachaRow key={u.id} u={u} yaGano={yaGano} rachaActual={rachaActual} showYo={false} />
+            {resultados.map(({ u, yaGano, rachaActual, proximoExacto }) => (
+              <RachaRow key={u.id} u={u} yaGano={yaGano} rachaActual={rachaActual} proximoExacto={proximoExacto} showYo={false} />
             ))}
           </div>
 
@@ -127,7 +138,7 @@ export default function RachaTab() {
 }
 
 // Componente compartido de fila — reutilizado también en el panel de usuario
-export function RachaRow({ u, yaGano, rachaActual, yoId, showYo = true }) {
+export function RachaRow({ u, yaGano, rachaActual, proximoExacto, yoId, showYo = true }) {
   const esMio = showYo && u.id === yoId;
   return (
     <div className={`racha-row ${yaGano ? "racha-row-ganador" : rachaActual >= 2 ? "racha-row-cerca" : ""} ${esMio ? "racha-row-mio" : ""}`}>
@@ -148,6 +159,11 @@ export function RachaRow({ u, yaGano, rachaActual, yoId, showYo = true }) {
                 ? "⚡ 1 exacto seguido"
                 : "Sin racha activa"}
         </span>
+        {rachaActual >= 2 && proximoExacto && (
+          <span className="racha-proximo">
+            ⏳ {proximoExacto.partido.equipo_local} vs {proximoExacto.partido.equipo_visitante}: {proximoExacto.pronostico.goles_local}–{proximoExacto.pronostico.goles_visitante}
+          </span>
+        )}
       </div>
       <div className="racha-dots">
         {[0, 1, 2].map(i => (
