@@ -166,7 +166,7 @@ export function calcRachaActual(partidosOrdenados, pronsMap, yaGano) {
   return racha;
 }
 
-// Encuentra el partido sin resultado más reciente cuya fecha_limite ya venció
+// Encuentra el partido sin resultado más antiguo cuya fecha_limite ya venció
 // y para el cual el usuario tiene un pronóstico registrado.
 function findProximoExacto(rachaActual, yaGano, allPts, userUpcomingMap) {
   if (yaGano || rachaActual < 1) return null;
@@ -178,8 +178,8 @@ function findProximoExacto(rachaActual, yaGano, allPts, userUpcomingMap) {
     new Date(p.fecha_limite) < now
   );
 
-  // Ordenar del más reciente al más antiguo
-  vencidosSinResultado.sort((a, b) => new Date(b.fecha_limite) - new Date(a.fecha_limite));
+  // Ordenar del más antiguo al más reciente
+  vencidosSinResultado.sort((a, b) => new Date(a.fecha_limite) - new Date(b.fecha_limite));
 
   for (const p of vencidosSinResultado) {
     const pron = userUpcomingMap?.[p.id];
