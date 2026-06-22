@@ -27,8 +27,7 @@ export default function RachaView({ user }) {
       .map(p => p.id);
     let upcomingProns = [];
     if (sinResultadoIds.length > 0) {
-      const { data } = await supabase.from("pronosticos").select("*").in("partido_id", sinResultadoIds);
-      upcomingProns = data || [];
+      upcomingProns = await fetchAllPaginated((from, to) => supabase.from("pronosticos").select("*").in("partido_id", sinResultadoIds).range(from, to));
     }
 
     setResultados(calcularRachas(usrs, allPts, allProns, upcomingProns));
