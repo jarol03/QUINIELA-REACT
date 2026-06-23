@@ -14,12 +14,16 @@ export default function RachaView({ user }) {
     const [
       { data: usrs },
       allPts,
-      allProns
+      allProns,
+      { data: configData }
     ] = await Promise.all([
       supabase.from("usuarios").select("id, username, nombre").order("username"),
       fetchAllPaginated((from, to) => supabase.from("partidos").select("*").range(from, to)),
-      fetchAllPaginated((from, to) => supabase.from("racha_pronosticos_view").select("*").range(from, to))
+      fetchAllPaginated((from, to) => supabase.from("racha_pronosticos_view").select("*").range(from, to)),
+      supabase.from("configuracion").select("valor").eq("clave", "racha_cerrada").maybeSingle()
     ]);
+
+    const config = configData?.valor || { cerrada: false, ganadores_oficiales_ids: [] };
 
     // Fetch pronósticos para partidos SIN resultado (para preview de "casi racha")
     const sinResultadoIds = (allPts || [])
@@ -30,14 +34,16 @@ export default function RachaView({ user }) {
       upcomingProns = await fetchAllPaginated((from, to) => supabase.from("pronosticos").select("*").in("partido_id", sinResultadoIds).range(from, to));
     }
 
-    setResultados(calcularRachas(usrs, allPts, allProns, upcomingProns));
+    setResultados(calcularRachas(usrs, allPts, allProns, upcomingProns, config));
     setLoading(false);
   };
 
   const miData     = resultados.find(r => r.u.id === user.id);
-  const ganadores  = resultados.filter(r => r.yaGano);
+  const ganadores  = resultados.filter(r => r.yaGano && r.esGanadorOficial);
+  const ganadoresFuera = resultados.filter(r => r.yaGano && !r.esGanadorOficial);
   const misRacha   = miData?.rachaActual ?? 0;
   const yoGane     = miData?.yaGano ?? false;
+  const soyOficial = miData?.esGanadorOficial ?? false;
 
   return (
     <div className="user-tab-content">
@@ -51,13 +57,21 @@ export default function RachaView({ user }) {
       ) : (
         <>
           {/* Mi estado personal */}
-          <div className={`racha-hero ${yoGane ? "racha-hero-ganador" : misRacha >= 2 ? "racha-hero-cerca" : ""}`}>
-            {yoGane ? (
+          <div className={`racha-hero ${yoGane && soyOficial ? "racha-hero-ganador" : yoGane && !soyOficial ? "racha-hero-fuera" : misRacha >= 2 ? "racha-hero-cerca" : ""}`}>
+            {yoGane && soyOficial ? (
               <>
                 <div className="rh-icon">🏆</div>
                 <div className="rh-info">
                   <span className="rh-titulo">¡Ganaste el premio!</span>
                   <span className="rh-sub">Fuiste el primero en lograr 3 exactos seguidos</span>
+                </div>
+              </>
+            ) : yoGane && !soyOficial ? (
+              <>
+                <div className="rh-icon">🎯</div>
+                <div className="rh-info">
+                  <span className="rh-titulo">Lograste 3 exactos seguidos</span>
+                  <span className="rh-sub">Pero el premio ya estaba cerrado · sin recompensa</span>
                 </div>
               </>
             ) : (
@@ -95,7 +109,7 @@ export default function RachaView({ user }) {
             )}
           </div>
 
-          {/* Ganadores */}
+          {/* Ganadores oficiales */}
           {ganadores.length > 0 && (
             <div className="racha-ganadores-card">
               <div className="rgc-title">🏆 Ganador{ganadores.length !== 1 ? "es" : ""} del premio</div>
@@ -128,13 +142,46 @@ export default function RachaView({ user }) {
             </div>
           )}
 
+          {/* Ganadores fuera del premio (post-cierre) */}
+          {ganadoresFuera.length > 0 && (
+            <div className="racha-fuera-card">
+              <div className="rfc-title">🎯 Lograron 3 exactos pero fuera del premio</div>
+              {ganadoresFuera.map(({ u, primeraRacha }) => (
+                <div key={u.id}>
+                  <div className="rfc-ganador">
+                    <div className="rfc-avatar">{(u.nombre || u.username).charAt(0).toUpperCase()}</div>
+                    <div className="rfc-info">
+                      <span className="rfc-nombre">{u.nombre || u.username}</span>
+                      <span className="rfc-sub">3 exactos consecutivos · sin premio</span>
+                    </div>
+                    <span className="rfc-no-premio">🚫</span>
+                  </div>
+                  <div className="rfc-detalle">
+                    <span className="rfc-det-label">Su racha ganadora:</span>
+                    {primeraRacha.map((p, i) => (
+                      <div key={p.id} className="rfc-partido">
+                        <span className="rfc-p-num">{i + 1}</span>
+                        <div className="rfc-p-info">
+                          <span className="rfc-p-teams">{p.equipo_local} vs {p.equipo_visitante}</span>
+                          <span className="rfc-p-fecha">{fmtFecha(p.fecha_limite)}</span>
+                        </div>
+                        <span className="rfc-p-score">{p.goles_local_real}–{p.goles_visitante_real}</span>
+                        <span className="rfc-p-badge">🎯 +3</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Lista completa */}
           <div className="racha-tabla">
             <div className="racha-tabla-header">
               <span className="col-label" style={{ marginBottom: 0 }}>Rachas actuales</span>
             </div>
-            {resultados.map(({ u, yaGano, rachaActual, proximoExacto }) => (
-              <RachaRow key={u.id} u={u} yaGano={yaGano} rachaActual={rachaActual} proximoExacto={proximoExacto} yoId={user.id} showYo />
+            {resultados.map(({ u, yaGano, esGanadorOficial, rachaActual, proximoExacto }) => (
+              <RachaRow key={u.id} u={u} yaGano={yaGano} esGanadorOficial={esGanadorOficial} rachaActual={rachaActual} proximoExacto={proximoExacto} yoId={user.id} showYo />
             ))}
           </div>
         </>

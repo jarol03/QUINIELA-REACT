@@ -834,6 +834,12 @@
   border-color: rgba(251,191,36,0.35) !important;
   background: rgba(251,191,36,0.06) !important;
 }
+.racha-hero-fuera {
+  border-color: rgba(148,163,184,0.3) !important;
+  background: rgba(148,163,184,0.05) !important;
+}
+.racha-hero-fuera .rh-titulo { color: var(--text-dim); }
+.racha-hero-fuera .rh-sub    { color: var(--text-dimmer); }
 .racha-hero-cerca {
   border-color: rgba(255,107,138,0.25) !important;
   background: rgba(255,107,138,0.04) !important;
@@ -891,6 +897,14 @@
   outline-offset: -1px;
 }
 .racha-yo { color: var(--accent); font-size: 12px; font-weight: 600; margin-left: 4px; }
+
+/* Fuera del premio en vista usuario */
+.racha-fuera-card {
+  background: rgba(148,163,184,0.07);
+  border: 1px solid rgba(148,163,184,0.2);
+  border-radius: 16px; padding: 14px 16px; margin-bottom: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+}
 
 /* ═══════════════════════════════════════
    RANKING SUB-TABS

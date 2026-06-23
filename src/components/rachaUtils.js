@@ -192,7 +192,8 @@ function findProximoExacto(rachaActual, yaGano, allPts, userUpcomingMap) {
 
 // Calcula el estado completo para todos los usuarios.
 // upcomingProns: pronósticos para partidos sin resultado aún (tabla pronosticos cruda).
-export function calcularRachas(usrs, allPts, allProns, upcomingProns = []) {
+// rachaConfig: { cerrada: boolean, ganadores_oficiales_ids: string[] } — controla quién es ganador oficial con premio.
+export function calcularRachas(usrs, allPts, allProns, upcomingProns = [], rachaConfig = {}) {
   const conRes = ordenarPartidos(allPts || []);
 
   // OPTIMIZACIÓN O(N): Agrupar todos los pronósticos por usuario de una sola pasada
@@ -230,6 +231,10 @@ export function calcularRachas(usrs, allPts, allProns, upcomingProns = []) {
 
     const primeraRacha = detectarPrimeraRacha(conRes, pronsMap);
     const yaGano       = !!primeraRacha;
+    const esGanadorOficial = yaGano && (
+      !rachaConfig.cerrada ||
+      (rachaConfig.ganadores_oficiales_ids || []).includes(u.id)
+    );
     const rachaActual  = calcRachaActual(conRes, pronsMap, yaGano);
     const proximoExacto = findProximoExacto(rachaActual, yaGano, allPts, upcomingMap);
 
@@ -252,12 +257,16 @@ export function calcularRachas(usrs, allPts, allProns, upcomingProns = []) {
       };
     });
 
-    return { u, primeraRacha, yaGano, rachaActual, proximoExacto, debugBloques };
+    return { u, primeraRacha, yaGano, esGanadorOficial, rachaActual, proximoExacto, debugBloques };
   });
 
   data.conResDebug = conRes; // attach directly to array for global debug
 
   data.sort((a, b) => {
+    if (a.yaGano && b.yaGano) {
+      if (a.esGanadorOficial && !b.esGanadorOficial) return -1;
+      if (!a.esGanadorOficial && b.esGanadorOficial) return 1;
+    }
     if (a.yaGano && !b.yaGano) return -1;
     if (!a.yaGano && b.yaGano) return 1;
     if (b.rachaActual !== a.rachaActual) return b.rachaActual - a.rachaActual;
