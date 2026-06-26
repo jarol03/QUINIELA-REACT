@@ -259,17 +259,45 @@
 
 .partido-num { font-size: 13px; font-weight: 700; color: var(--text-dimmer); min-width: 18px; flex-shrink: 0; }
 
-.partido-teams { flex: 1; min-width: 0; width: 100%; max-width: none !important; }
-.partido-teams-inner { display: flex; flex-direction: column; gap: 4px; width: 100%; }
-.team-vs-row { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 2px 0; width: 100%; }
-.team-name { display: block; width: 100%; font-size: 14px; font-weight: 600; color: #fff; text-align: left; line-height: 1.2; white-space: nowrap; overflow: visible; letter-spacing: -0.2px; }
-.vs-sep { font-size: 8px; font-weight: 900; color: var(--accent); background: rgba(0,229,160,0.08); border: 1px solid rgba(0,229,160,0.15); padding: 1px 10px; border-radius: 100px; letter-spacing: 2px; text-transform: uppercase; }
+.partido-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
 
-.partido-fecha { font-size: 10px; font-weight: 600; }
+.score-columns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sc-team {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.sc-team-name {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+  letter-spacing: -0.1px;
+}
+
+.partido-fecha { font-size: 10px; font-weight: 600; text-align: center; }
 .partido-fecha-open   { color: rgba(0,229,160,0.65); }
 .partido-fecha-closed { color: rgba(255,107,138,0.55); }
-
-.score-inputs { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
 
 .score-input {
   width: 44px; height: 44px;

@@ -281,11 +281,17 @@ export default function PuntosTab() {
                         </div>
                         {showInputs ? (
                           <div className="resultado-inputs">
-                            <input className="res-input" type="number" min="0" value={r.local}
-                              onChange={e => setEditRes(prev => ({ ...prev, [p.id]: { ...prev[p.id], local: e.target.value } }))} placeholder="—" />
+                            <div className="ri-team">
+                              <span className="ri-team-name">{p.equipo_local}</span>
+                              <input className="res-input" type="number" min="0" value={r.local}
+                                onChange={e => setEditRes(prev => ({ ...prev, [p.id]: { ...prev[p.id], local: e.target.value } }))} placeholder="—" />
+                            </div>
                             <span className="res-dash">–</span>
-                            <input className="res-input" type="number" min="0" value={r.visitante}
-                              onChange={e => setEditRes(prev => ({ ...prev, [p.id]: { ...prev[p.id], visitante: e.target.value } }))} placeholder="—" />
+                            <div className="ri-team">
+                              <span className="ri-team-name">{p.equipo_visitante}</span>
+                              <input className="res-input" type="number" min="0" value={r.visitante}
+                                onChange={e => setEditRes(prev => ({ ...prev, [p.id]: { ...prev[p.id], visitante: e.target.value } }))} placeholder="—" />
+                            </div>
                             <button className="res-save-btn" onClick={() => saveResultado(p.id)}
                               disabled={isSaving || r.local === "" || r.visitante === ""}>
                               {isSaving ? "..." : "Guardar"}

@@ -192,11 +192,17 @@ export default function AdminFinalTab() {
                       </select>
                     </div>
                     <div className="af-goles-row">
-                      <input className="res-input" type="number" min="0" value={resGolesL}
-                        onChange={e => setResGolesL(e.target.value)} placeholder="0" />
+                      <div className="ri-team">
+                        <span className="ri-team-name">{resLocal || "Local"}</span>
+                        <input className="res-input" type="number" min="0" value={resGolesL}
+                          onChange={e => setResGolesL(e.target.value)} placeholder="0" />
+                      </div>
                       <span className="res-dash">–</span>
-                      <input className="res-input" type="number" min="0" value={resGolesV}
-                        onChange={e => setResGolesV(e.target.value)} placeholder="0" />
+                      <div className="ri-team">
+                        <span className="ri-team-name">{resVisit || "Visitante"}</span>
+                        <input className="res-input" type="number" min="0" value={resGolesV}
+                          onChange={e => setResGolesV(e.target.value)} placeholder="0" />
+                      </div>
                     </div>
                     <div className="final-field-group">
                       <label className="dt-label">Equipo visitante</label>

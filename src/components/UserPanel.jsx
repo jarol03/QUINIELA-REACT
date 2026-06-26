@@ -961,33 +961,31 @@ const PartidoRow = memo(function PartidoRow({ partido: p, index: i, value: val, 
       style={{ animationDelay: `${animDelay}s` }}>
       <span className="partido-num">{i + 1}</span>
 
-      <div className="partido-teams">
-        <div className="partido-teams-inner">
-          <div className="team-vs-row">
-            <span className="team-name">{p.equipo_local}</span>
-            <span className="vs-sep">VS</span>
-            <span className="team-name">{p.equipo_visitante}</span>
+      <div className="partido-body">
+        <div className="score-columns">
+          <div className="sc-team">
+            <span className="sc-team-name">{p.equipo_local}</span>
+            <input className={`score-input ${closed ? "score-input-saved" : ""} ${isSaved && !isModified && !closed ? "score-input-ok" : ""}`}
+              type="text" inputMode="numeric" pattern="[0-9]*"
+              value={val.local ?? ""} onChange={e => onChange(p.id, "local", e.target.value)}
+              onFocus={handleFocus}
+              disabled={closed} placeholder="0" />
           </div>
-          {p.fecha_limite && (
-            <span className={`partido-fecha ${closed ? "partido-fecha-closed" : "partido-fecha-open"}`}>
-              {closed ? "🔒 " : "⏰ "}{fmtFecha(p.fecha_limite)}
-            </span>
-          )}
+          <span className="score-dash">–</span>
+          <div className="sc-team">
+            <span className="sc-team-name">{p.equipo_visitante}</span>
+            <input className={`score-input ${closed ? "score-input-saved" : ""} ${isSaved && !isModified && !closed ? "score-input-ok" : ""}`}
+              type="text" inputMode="numeric" pattern="[0-9]*"
+              value={val.visitante ?? ""} onChange={e => onChange(p.id, "visitante", e.target.value)}
+              onFocus={handleFocus}
+              disabled={closed} placeholder="0" />
+          </div>
         </div>
-      </div>
-
-      <div className="score-inputs">
-        <input className={`score-input ${closed ? "score-input-saved" : ""} ${isSaved && !isModified && !closed ? "score-input-ok" : ""}`}
-          type="text" inputMode="numeric" pattern="[0-9]*"
-          value={val.local ?? ""} onChange={e => onChange(p.id, "local", e.target.value)}
-          onFocus={handleFocus}
-          disabled={closed} placeholder="0" />
-        <span className="score-dash">–</span>
-        <input className={`score-input ${closed ? "score-input-saved" : ""} ${isSaved && !isModified && !closed ? "score-input-ok" : ""}`}
-          type="text" inputMode="numeric" pattern="[0-9]*"
-          value={val.visitante ?? ""} onChange={e => onChange(p.id, "visitante", e.target.value)}
-          onFocus={handleFocus}
-          disabled={closed} placeholder="0" />
+        {p.fecha_limite && (
+          <span className={`partido-fecha ${closed ? "partido-fecha-closed" : "partido-fecha-open"}`}>
+            {closed ? "🔒 " : "⏰ "}{fmtFecha(p.fecha_limite)}
+          </span>
+        )}
       </div>
 
       <div className="partido-status-icon">
