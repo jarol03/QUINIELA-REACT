@@ -31,6 +31,8 @@ export default function AdminFinalTab() {
 
   // Nuevo equipo
   const [nuevoEquipo, setNuevoEquipo] = useState("");
+  const [nuevoEquipoLlave, setNuevoEquipoLlave] = useState(1);
+  const [editandoLlave, setEditandoLlave] = useState(null); // {id, llave}
 
   useEffect(() => { load(); }, []);
 
@@ -111,9 +113,17 @@ export default function AdminFinalTab() {
   const agregarEquipo = async () => {
     const nombre = nuevoEquipo.trim();
     if (!nombre) return;
-    const { error } = await supabase.from("equipos_mundial").insert({ nombre, orden: equipos.length + 1 });
-    if (!error) { setNuevoEquipo(""); await load(); showToast("Equipo agregado ✓"); }
+    const { error } = await supabase.from("equipos_mundial").insert({
+      nombre, orden: equipos.length + 1, llave: nuevoEquipoLlave,
+    });
+    if (!error) { setNuevoEquipo(""); setNuevoEquipoLlave(1); await load(); showToast("Equipo agregado ✓"); }
     else showToast("Error: ese equipo ya existe.");
+  };
+
+  const cambiarLlave = async (id, llave) => {
+    await supabase.from("equipos_mundial").update({ llave }).eq("id", id);
+    setEditandoLlave(null);
+    setEquipos(prev => prev.map(e => e.id === id ? { ...e, llave } : e));
   };
 
   const eliminarEquipo = async (id) => {
@@ -227,11 +237,24 @@ export default function AdminFinalTab() {
               </p>
 
               {/* Agregar equipo */}
-              <div className="af-add-equipo">
-                <input className="admin-input" placeholder="Agregar equipo..." value={nuevoEquipo}
-                  onChange={e => setNuevoEquipo(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && agregarEquipo()} />
-                <button className="admin-btn-primary" onClick={agregarEquipo} disabled={!nuevoEquipo.trim()}>+</button>
+              <div className="af-add-equipo-stack">
+                <div className="af-add-equipo">
+                  <input className="admin-input" placeholder="Agregar equipo..." value={nuevoEquipo}
+                    onChange={e => setNuevoEquipo(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && agregarEquipo()} />
+                  <button className="admin-btn-primary" onClick={agregarEquipo} disabled={!nuevoEquipo.trim()}>+</button>
+                </div>
+                <div className="af-llave-picker">
+                  <span className="af-llave-label">Llave:</span>
+                  <button
+                    className={`af-llave-btn ${nuevoEquipoLlave === 1 ? "active" : ""}`}
+                    onClick={() => setNuevoEquipoLlave(1)}
+                  >1</button>
+                  <button
+                    className={`af-llave-btn ${nuevoEquipoLlave === 2 ? "active" : ""}`}
+                    onClick={() => setNuevoEquipoLlave(2)}
+                  >2</button>
+                </div>
               </div>
 
               {/* Activos */}
@@ -241,9 +264,23 @@ export default function AdminFinalTab() {
                   <div className="af-equipos-list">
                     {activos.map(e => (
                       <div key={e.id} className="af-equipo-row active">
+                        <span className={`af-llave-badge af-llave-badge-${e.llave || 1}`}>
+                          L{e.llave || 1}
+                        </span>
                         <span className="af-equipo-nombre">{e.nombre}</span>
                         <div className="af-equipo-actions">
-                          <button className="af-elim-btn" onClick={() => toggleEliminado(e)}>❌ Eliminar</button>
+                          {editandoLlave?.id === e.id ? (
+                            <div className="af-llave-edit-inline">
+                              <button className="af-llave-btn-sm" onClick={() => cambiarLlave(e.id, 1)}>L1</button>
+                              <button className="af-llave-btn-sm" onClick={() => cambiarLlave(e.id, 2)}>L2</button>
+                              <button className="af-llave-cancel" onClick={() => setEditandoLlave(null)}>✕</button>
+                            </div>
+                          ) : (
+                            <button className="af-llave-switch" onClick={() => setEditandoLlave({ id: e.id, llave: e.llave })}>
+                              ↺
+                            </button>
+                          )}
+                          <button className="af-elim-btn" onClick={() => toggleEliminado(e)}>❌</button>
                           <button className="icon-btn danger" onClick={() => eliminarEquipo(e.id)}>🗑</button>
                         </div>
                       </div>
@@ -259,9 +296,12 @@ export default function AdminFinalTab() {
                   <div className="af-equipos-list">
                     {eliminados.map(e => (
                       <div key={e.id} className="af-equipo-row eliminated">
+                        <span className={`af-llave-badge af-llave-badge-${e.llave || 1}`}>
+                          L{e.llave || 1}
+                        </span>
                         <span className="af-equipo-nombre">{e.nombre}</span>
                         <div className="af-equipo-actions">
-                          <button className="af-restore-btn" onClick={() => toggleEliminado(e)}>↩ Restaurar</button>
+                          <button className="af-restore-btn" onClick={() => toggleEliminado(e)}>↩</button>
                           <button className="icon-btn danger" onClick={() => eliminarEquipo(e.id)}>🗑</button>
                         </div>
                       </div>

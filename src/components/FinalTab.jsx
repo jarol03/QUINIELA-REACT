@@ -11,9 +11,9 @@ function fmtFecha(iso) {
 
 export default function FinalTab({ user }) {
   const [config,     setConfig]     = useState(null);
-  const [equipos,    setEquipos]    = useState([]);   // todos los equipos con estado eliminado
+  const [equipos,    setEquipos]    = useState([]);
   const [miPred,     setMiPred]     = useState(null);
-  const [todasPreds, setTodasPreds] = useState([]);   // todas las predicciones
+  const [todasPreds, setTodasPreds] = useState([]);
   const [usuarios,   setUsuarios]   = useState([]);
   const [localSel,   setLocalSel]   = useState("");
   const [visitSel,   setVisitSel]   = useState("");
@@ -29,7 +29,7 @@ export default function FinalTab({ user }) {
     setLoading(true);
     const [{ data: cfgs }, { data: eqs }, { data: pred }, { data: preds }, { data: usrs }] = await Promise.all([
       supabase.from("final_config").select("*").limit(1),
-      supabase.from("equipos_mundial").select("*").order("nombre"),  // todos, con eliminado
+      supabase.from("equipos_mundial").select("*").order("nombre"),
       supabase.from("predicciones_final").select("*").eq("usuario_id", user.id).maybeSingle(),
       supabase.from("predicciones_final").select("*"),
       supabase.from("usuarios").select("id, username, nombre").order("username"),
@@ -54,7 +54,6 @@ export default function FinalTab({ user }) {
 
   const resultadoReal = config?.equipo_local_real && config?.goles_local_real != null;
 
-  // ¿Acerté?
   const acerte = miPred && resultadoReal && (
     miPred.equipo_local     === config.equipo_local_real &&
     miPred.equipo_visitante === config.equipo_visitante_real &&
@@ -92,19 +91,24 @@ export default function FinalTab({ user }) {
     setTimeout(() => setToast({ msg: "", type: "success" }), 3000);
   };
 
-  // Equipos activos para los selectores
-  const equiposActivos = equipos.filter(e => !e.eliminado);
+  const equiposLlave1 = equipos.filter(e => e.llave === 1 || e.llave == null);
+  const equiposLlave2 = equipos.filter(e => e.llave === 2);
   const eqEliminadosSet = new Set(equipos.filter(e => e.eliminado).map(e => e.nombre));
 
-  const localOpts = equiposActivos.filter(e => e.nombre !== visitSel);
-  const visitOpts = equiposActivos.filter(e => e.nombre !== localSel);
-  // Si el equipo seleccionado fue eliminado, lo mostramos igual para no confundir
-  if (localSel && !equiposActivos.find(e => e.nombre === localSel))
-    localOpts.unshift({ nombre: localSel, eliminado: true });
-  if (visitSel && !equiposActivos.find(e => e.nombre === visitSel))
-    visitOpts.unshift({ nombre: visitSel, eliminado: true });
+  const handleSelectLlave1 = (nombre) => {
+    if (isClosed || eqEliminadosSet.has(nombre)) return;
+    if (nombre === localSel) { setLocalSel(""); return; }
+    if (nombre === visitSel) setVisitSel("");
+    setLocalSel(nombre);
+  };
 
-  // Calcular estado de cada predicción
+  const handleSelectLlave2 = (nombre) => {
+    if (isClosed || eqEliminadosSet.has(nombre)) return;
+    if (nombre === visitSel) { setVisitSel(""); return; }
+    if (nombre === localSel) setLocalSel("");
+    setVisitSel(nombre);
+  };
+
   const predConEstado = todasPreds.map(p => {
     const u = usuarios.find(u => u.id === p.usuario_id);
     const localElim = eqEliminadosSet.has(p.equipo_local);
@@ -128,7 +132,9 @@ export default function FinalTab({ user }) {
     <div className="user-tab-content">
       <div className="user-section-header">
         <h2 className="user-section-title">🏆 Gran Final</h2>
-        <p className="user-section-sub">Predice el resultado exacto de la final del Mundial 2026</p>
+        <p className="user-section-sub">
+          Elige el campeón de cada llave y predice el resultado exacto
+        </p>
       </div>
 
       {loading ? (
@@ -137,11 +143,10 @@ export default function FinalTab({ user }) {
         <div className="empty-state">
           <span className="empty-icon">⏳</span>
           <p>Aún no disponible</p>
-          <span>El admin habilitará la predicción de la final próximamente.</span>
+          <span>El admin habilitará la predicción próximamente.</span>
         </div>
       ) : (
         <>
-          {/* Fecha límite */}
           {config.fecha_limite && (
             <div className={`final-fecha-banner ${isClosed ? "closed" : "open"}`}>
               {isClosed
@@ -150,7 +155,6 @@ export default function FinalTab({ user }) {
             </div>
           )}
 
-          {/* Resultado real — si ya se jugó */}
           {resultadoReal && (
             <div className={`final-resultado-real ${acerte ? "final-acerte" : "final-no-acerte"}`}>
               <div className="frr-title">
@@ -165,20 +169,166 @@ export default function FinalTab({ user }) {
             </div>
           )}
 
-          {/* Mi predicción guardada — resumen */}
           {miPred && (
             <div className="final-mi-pred">
               <div className="fmp-label">Tu predicción</div>
               <div className="fmp-score">
-                <span className="fmp-team">{miPred.equipo_local}</span>
+                <span className="fmp-team fmp-team-llave1">{miPred.equipo_local}</span>
                 <span className="fmp-marcador">{miPred.goles_local} – {miPred.goles_visitante}</span>
-                <span className="fmp-team">{miPred.equipo_visitante}</span>
+                <span className="fmp-team fmp-team-llave2">{miPred.equipo_visitante}</span>
               </div>
               {!isClosed && <span className="fmp-edit-hint">Puedes modificarla abajo hasta el cierre</span>}
             </div>
           )}
 
-          {/* Tabla de en juego — visible cuando ya cerró */}
+          {/* ─── BRACKET: DOS LLAVES ─── */}
+          {!isClosed && (
+            <div className="bk-container">
+              <div className="bk-columns">
+                {/* Llave 1 */}
+                <div className="bk-card bk-card-llave1">
+                  <div className="bk-card-header">
+                    <span className="bk-card-icon">❶</span>
+                    <span className="bk-card-title">Llave 1</span>
+                    <span className="bk-card-rounds">Octavos → Final</span>
+                  </div>
+                  <div className="bk-teams">
+                    {equiposLlave1.map((eq, i) => {
+                      const sel = eq.nombre === localSel;
+                      const elim = eq.eliminado;
+                      return (
+                        <button
+                          key={eq.nombre}
+                          className={`bk-team-btn ${sel ? "bk-team-selected-l1" : ""} ${elim ? "bk-team-elim" : ""}`}
+                          onClick={() => handleSelectLlave1(eq.nombre)}
+                          disabled={elim || isClosed}
+                          style={{ animationDelay: `${i * 0.05}s` }}
+                        >
+                          <span className="bk-team-marker" />
+                          <span className="bk-team-name">{eq.nombre}</span>
+                          {elim && <span className="bk-team-strike" />}
+                          {sel && <span className="bk-team-badge">✓</span>}
+                        </button>
+                      );
+                    })}
+                    {equiposLlave1.length === 0 && (
+                      <span className="bk-empty-msg">Sin equipos asignados</span>
+                    )}
+                  </div>
+                  {localSel && (
+                    <div className="bk-card-footer">
+                      <span className="bk-footer-label">Tu elegido</span>
+                      <span className="bk-footer-team">{localSel}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Llave 2 */}
+                <div className="bk-card bk-card-llave2">
+                  <div className="bk-card-header">
+                    <span className="bk-card-icon">❷</span>
+                    <span className="bk-card-title">Llave 2</span>
+                    <span className="bk-card-rounds">Octavos → Final</span>
+                  </div>
+                  <div className="bk-teams">
+                    {equiposLlave2.map((eq, i) => {
+                      const sel = eq.nombre === visitSel;
+                      const elim = eq.eliminado;
+                      return (
+                        <button
+                          key={eq.nombre}
+                          className={`bk-team-btn ${sel ? "bk-team-selected-l2" : ""} ${elim ? "bk-team-elim" : ""}`}
+                          onClick={() => handleSelectLlave2(eq.nombre)}
+                          disabled={elim || isClosed}
+                          style={{ animationDelay: `${i * 0.05}s` }}
+                        >
+                          <span className="bk-team-marker" />
+                          <span className="bk-team-name">{eq.nombre}</span>
+                          {elim && <span className="bk-team-strike" />}
+                          {sel && <span className="bk-team-badge">✓</span>}
+                        </button>
+                      );
+                    })}
+                    {equiposLlave2.length === 0 && (
+                      <span className="bk-empty-msg">Sin equipos asignados</span>
+                    )}
+                  </div>
+                  {visitSel && (
+                    <div className="bk-card-footer">
+                      <span className="bk-footer-label">Tu elegido</span>
+                      <span className="bk-footer-team">{visitSel}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ─── FINAL SCORE ─── */}
+              <div className="bk-final-section">
+                <div className="bk-final-path">
+                  <div className="bk-path-line" />
+                </div>
+                <div className="bk-final-card">
+                  <div className="bk-final-label">GRAN FINAL</div>
+                  <div className="bk-final-match">
+                    <div className={`bk-final-team ${localSel ? "bk-final-active" : ""}`}>
+                      <span className="bk-ft-name">{localSel || "Llave 1"}</span>
+                      <span className="bk-ft-llave">L1</span>
+                    </div>
+                    <div className="bk-final-score">
+                      <span className="bk-score-vs">VS</span>
+                      <div className="bk-score-inputs">
+                        <input
+                          className="bk-score-input"
+                          type="number" min="0" inputMode="numeric"
+                          value={golesL}
+                          onChange={e => setGolesL(Math.max(0, parseInt(e.target.value) || 0))}
+                          placeholder="0"
+                        />
+                        <span className="bk-score-dash">–</span>
+                        <input
+                          className="bk-score-input"
+                          type="number" min="0" inputMode="numeric"
+                          value={golesV}
+                          onChange={e => setGolesV(Math.max(0, parseInt(e.target.value) || 0))}
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                    <div className={`bk-final-team bk-final-team-r ${visitSel ? "bk-final-active" : ""}`}>
+                      <span className="bk-ft-name">{visitSel || "Llave 2"}</span>
+                      <span className="bk-ft-llave">L2</span>
+                    </div>
+                  </div>
+
+                  {localSel && visitSel && golesL !== "" && golesV !== "" && (
+                    <div className="bk-final-preview">
+                      <span className="bk-fp-campeon">
+                        🏆 Campeón: {" "}
+                        <strong>
+                          {Number(golesL) >= Number(golesV) ? localSel : visitSel}
+                        </strong>
+                      </span>
+                    </div>
+                  )}
+
+                  <button
+                    className="bk-save-btn"
+                    onClick={handleSave}
+                    disabled={saving || !localSel || !visitSel || golesL === "" || golesV === ""}
+                  >
+                    {saving ? (
+                      <span className="bk-save-loading">Guardando…</span>
+                    ) : miPred ? (
+                      <span>✓ Actualizar predicción</span>
+                    ) : (
+                      <span>Guardar predicción →</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {isClosed && predConEstado.length > 0 && (
             <div className="final-standings">
               <div className="fst-header">
@@ -192,7 +342,6 @@ export default function FinalTab({ user }) {
                   </span>
                 </div>
               </div>
-
               <div className="fst-list">
                 {predConEstado.map(p => {
                   const esMio = p.usuario_id === user.id;
@@ -211,7 +360,6 @@ export default function FinalTab({ user }) {
                           {" "}<strong>{p.goles_local}–{p.goles_visitante}</strong>{" "}
                           <span className={p.visitElim ? "fst-team-elim" : ""}>{p.equipo_visitante}</span>
                         </span>
-                        {/* Razón de eliminación */}
                         {!p.enJuego && (
                           <span className="fst-razon">
                             ❌ {[p.localElim && p.equipo_local, p.visitElim && p.equipo_visitante].filter(Boolean).join(" y ")} eliminado{p.localElim && p.visitElim ? "s" : ""}
@@ -228,94 +376,6 @@ export default function FinalTab({ user }) {
             </div>
           )}
 
-          {/* Formulario — solo si no cerró */}
-          {!isClosed && (
-            <div className="final-form">
-              <div className="final-form-title">
-                {miPred ? "✏️ Modificar predicción" : "📝 Ingresar predicción"}
-              </div>
-
-              {/* Selector equipo local */}
-              <div className="final-field-group">
-                <label className="final-field-label">Equipo 1 (local)</label>
-                <select
-                  className="final-select"
-                  value={localSel}
-                  onChange={e => setLocalSel(e.target.value)}
-                >
-                  <option value="">— Selecciona un equipo —</option>
-                  {localOpts.map(e => (
-                    <option key={e.nombre} value={e.nombre}>
-                      {e.nombre}{e.eliminado ? " ❌" : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Marcador */}
-              <div className="final-score-row">
-                <div className="final-score-input-wrap">
-                  <span className="final-score-team-label">{localSel || "Local"}</span>
-                  <input
-                    className="final-score-input"
-                    type="number" min="0" inputMode="numeric"
-                    value={golesL}
-                    onChange={e => setGolesL(Math.max(0, parseInt(e.target.value) || 0))}
-                    placeholder="0"
-                  />
-                </div>
-                <span className="final-score-vs">–</span>
-                <div className="final-score-input-wrap">
-                  <span className="final-score-team-label">{visitSel || "Visitante"}</span>
-                  <input
-                    className="final-score-input"
-                    type="number" min="0" inputMode="numeric"
-                    value={golesV}
-                    onChange={e => setGolesV(Math.max(0, parseInt(e.target.value) || 0))}
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              {/* Selector equipo visitante */}
-              <div className="final-field-group">
-                <label className="final-field-label">Equipo 2 (visitante)</label>
-                <select
-                  className="final-select"
-                  value={visitSel}
-                  onChange={e => setVisitSel(e.target.value)}
-                >
-                  <option value="">— Selecciona un equipo —</option>
-                  {visitOpts.map(e => (
-                    <option key={e.nombre} value={e.nombre}>
-                      {e.nombre}{e.eliminado ? " ❌" : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Preview */}
-              {localSel && visitSel && golesL !== "" && golesV !== "" && (
-                <div className="final-preview">
-                  <span className="fp-label">Tu predicción:</span>
-                  <span className="fp-text">
-                    {localSel} <strong>{golesL}</strong> – <strong>{golesV}</strong> {visitSel}
-                    {" · Campeón: "}<strong>{Number(golesL) >= Number(golesV) ? localSel : visitSel}</strong>
-                  </span>
-                </div>
-              )}
-
-              <button
-                className="final-save-btn"
-                onClick={handleSave}
-                disabled={saving || !localSel || !visitSel || golesL === "" || golesV === ""}
-              >
-                {saving ? "Guardando..." : miPred ? "✓ Actualizar predicción" : "Guardar predicción →"}
-              </button>
-            </div>
-          )}
-
-          {/* Cerrado sin predicción */}
           {isClosed && !miPred && (
             <div className="empty-state" style={{ marginTop: 20 }}>
               <span className="empty-icon">😔</span>
