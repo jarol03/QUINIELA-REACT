@@ -251,7 +251,7 @@ export default function AdminFinalTab() {
       label: c,
       count: champCounts[c],
       pct: vivos.length > 0 ? Math.round((champCounts[c] / vivos.length) * 100) : 0
-    })).sort((a, b) => b.count - a.count).slice(0, 5);
+    })).sort((a, b) => b.count - a.count);
     
     const colors = [
       [251, 191, 36], // yellow
@@ -262,7 +262,7 @@ export default function AdminFinalTab() {
     ];
     champStats.forEach((st, i) => st.color = colors[i % colors.length]);
 
-    setPdfStats({ pctVivos, pctMuertos, barData: champStats });
+    setPdfStats({ pctVivos, pctMuertos, llenaron: predicciones.length, totalUsuarios: usuarios.length, barData: champStats });
     setPdfData(vivos);
     setShowPdfModal(true);
   };

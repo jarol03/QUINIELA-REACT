@@ -160,6 +160,11 @@ export default function PDFExportModal({
           doc.roundedRect(PAD + 60, contentY - 4, 30, 6, 1, 1, "F");
           doc.setTextColor(10, 20, 30);
           doc.text(`Eliminados  ${extraHeader.stats.pctMuertos}%`, PAD + 62, contentY + 0.5);
+
+          doc.setFillColor(56, 189, 248);
+          doc.roundedRect(PAD + 95, contentY - 4, 30, 6, 1, 1, "F");
+          doc.setTextColor(10, 20, 30);
+          doc.text(`Llenaron  ${extraHeader.stats.llenaron}/${extraHeader.stats.totalUsuarios}`, PAD + 97, contentY + 0.5);
           
           contentY += 8;
         }
