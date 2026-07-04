@@ -385,8 +385,7 @@ export default function FinalTab({ user }) {
             </div>
           )}
 
-          {/* Temporalmente deshabilitado — quitar false && para reactivar */}
-          {false && isClosed && predConEstado.length > 0 && (
+          {isClosed && predConEstado.length > 0 && (
             <div className="final-standings">
               <div className="fst-header">
                 <span className="fst-title">Tabla de participantes</span>
@@ -402,6 +401,7 @@ export default function FinalTab({ user }) {
               <div className="fst-list">
                 {predConEstado.map(p => {
                   const esMio = p.usuario_id === user.id;
+                  const empate = Number(p.goles_local) === Number(p.goles_visitante);
                   return (
                     <div key={p.usuario_id} className={`fst-row ${p.esGanador ? "fst-ganador" : p.enJuego ? "fst-vivo" : "fst-eliminado"} ${esMio ? "fst-mio" : ""}`}>
                       <div className="fst-avatar">
@@ -416,6 +416,9 @@ export default function FinalTab({ user }) {
                           <span className={p.localElim ? "fst-team-elim" : ""}>{p.equipo_local}</span>
                           {" "}<strong>{p.goles_local}–{p.goles_visitante}</strong>{" "}
                           <span className={p.visitElim ? "fst-team-elim" : ""}>{p.equipo_visitante}</span>
+                        </span>
+                        <span className="fst-campeon">
+                          🏆 {p.campeon || (Number(p.goles_local) > Number(p.goles_visitante) ? p.equipo_local : p.equipo_visitante)}
                         </span>
                         {!p.enJuego && (
                           <span className="fst-razon">

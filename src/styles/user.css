@@ -1150,6 +1150,8 @@
 .fst-razon  { font-size: 11px; color: var(--danger); opacity: 0.8; }
 
 .fst-estado { font-size: 18px; flex-shrink: 0; }
+.fst-campeon { font-size: 11px; color: var(--gold, #fbbf24); font-weight: 700; }
+
 
 /* ── RESPONSIVE ── */
 @media (max-width: 420px) {

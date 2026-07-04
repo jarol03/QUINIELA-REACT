@@ -183,6 +183,8 @@ export default function AdminFinalTab() {
     let vivos = [];
     let muertosCount = 0;
     
+    const usersWithPred = new Set(predicciones.map(p => p.usuario_id));
+    
     predicciones.forEach(p => {
       const u = usuarios.find(u => u.id === p.usuario_id);
       if (!u) return;
@@ -196,9 +198,21 @@ export default function AdminFinalTab() {
         muertosCount++;
       }
     });
+    
+    usuarios.forEach(u => {
+      if (!usersWithPred.has(u.id)) {
+        vivos.push({
+          usuario_id: u.id,
+          nombre: u.nombre,
+          username: u.username,
+          sinPred: true,
+        });
+      }
+    });
 
     const countByPred = {};
     vivos.forEach(p => {
+      if (p.sinPred) return;
       let campeon = p.equipo_local;
       let subcampeon = p.equipo_visitante;
       let golesC = Number(p.goles_local);
@@ -229,11 +243,19 @@ export default function AdminFinalTab() {
     });
 
     vivos.forEach(p => {
+      if (p.sinPred) return;
       p.premio = 1000 / countByPred[p.predKey];
     });
 
     vivos.sort((a, b) => {
-      if (a.campeon !== b.campeon) return a.campeon.localeCompare(b.campeon);
+      if (a.sinPred && !b.sinPred) return 1;
+      if (!a.sinPred && b.sinPred) return -1;
+      if (a.sinPred && b.sinPred) {
+        const nA = (a.nombre || a.username || "").toLowerCase();
+        const nB = (b.nombre || b.username || "").toLowerCase();
+        return nA.localeCompare(nB);
+      }
+      if (a.campeon !== b.campeon) return (a.campeon || "").localeCompare(b.campeon || "");
       if (a.goles_campeon !== b.goles_campeon) return b.goles_campeon - a.goles_campeon;
       if (a.goles_subcampeon !== b.goles_subcampeon) return b.goles_subcampeon - a.goles_subcampeon;
       const nA = (a.nombre || a.username || "").toLowerCase();
@@ -241,19 +263,21 @@ export default function AdminFinalTab() {
       return nA.localeCompare(nB);
     });
 
-    const total = vivos.length + muertosCount;
-    const pctVivos = total > 0 ? Math.round((vivos.length / total) * 100) : 0;
+    const sinPredCount = vivos.filter(p => p.sinPred).length;
+    const conPred = vivos.filter(p => !p.sinPred);
+    const total = conPred.length + muertosCount;
+    const pctVivos = total > 0 ? Math.round((conPred.length / total) * 100) : 0;
     const pctMuertos = total > 0 ? 100 - pctVivos : 0;
 
     const champCounts = {};
-    vivos.forEach(p => {
+    conPred.forEach(p => {
       champCounts[p.campeon] = (champCounts[p.campeon] || 0) + 1;
     });
     
     const champStats = Object.keys(champCounts).map(c => ({
       label: c,
       count: champCounts[c],
-      pct: vivos.length > 0 ? Math.round((champCounts[c] / vivos.length) * 100) : 0
+      pct: conPred.length > 0 ? Math.round((champCounts[c] / conPred.length) * 100) : 0
     })).sort((a, b) => b.count - a.count);
     
     const colors = [
