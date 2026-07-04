@@ -448,7 +448,6 @@ export default function AdminFinalTab() {
                             </button>
                           )}
                           <button className="af-elim-btn" onClick={() => toggleEliminado(e)}>❌</button>
-                          <button className="icon-btn danger" onClick={() => eliminarEquipo(e.id)}>🗑</button>
                         </div>
                       </div>
                     ))}
@@ -469,7 +468,6 @@ export default function AdminFinalTab() {
                         <span className="af-equipo-nombre">{e.nombre}</span>
                         <div className="af-equipo-actions">
                           <button className="af-restore-btn" onClick={() => toggleEliminado(e)}>↩</button>
-                          <button className="icon-btn danger" onClick={() => eliminarEquipo(e.id)}>🗑</button>
                         </div>
                       </div>
                     ))}
