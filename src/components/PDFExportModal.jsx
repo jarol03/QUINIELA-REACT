@@ -53,6 +53,9 @@ export default function PDFExportModal({
         const cA = (a.campeon || "").toLowerCase();
         const cB = (b.campeon || "").toLowerCase();
         if (cA !== cB) return cA.localeCompare(cB, "es");
+        const vA = (a.subcampeon || "").toLowerCase();
+        const vB = (b.subcampeon || "").toLowerCase();
+        if (vA !== vB) return vA.localeCompare(vB, "es");
         const gA = Number(a.goles_campeon);
         const gB = Number(b.goles_campeon);
         if (gA !== gB) return gA - gB;
