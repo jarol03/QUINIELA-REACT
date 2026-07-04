@@ -20,30 +20,6 @@ export default function App() {
     checkSession();
   }, []);
 
-  // Al volver a la pestaña verifica si hay deploy nuevo; si cambió, recarga
-  useEffect(() => {
-    let mounted = true;
-    const check = async () => {
-      const { data } = await supabase
-        .from("configuracion")
-        .select("valor")
-        .eq("clave", "app_version")
-        .maybeSingle();
-      if (!data?.valor || !mounted) return;
-      const stored = localStorage.getItem("app_version");
-      if (stored && stored !== data.valor) {
-        localStorage.setItem("app_version", data.valor);
-        window.location.reload();
-      } else if (!stored) {
-        localStorage.setItem("app_version", data.valor);
-      }
-    };
-    check();
-    const onVisible = () => { if (document.visibilityState === "visible") check(); };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => { mounted = false; document.removeEventListener("visibilitychange", onVisible); };
-  }, []);
-
   const checkSession = async () => {
     const session = getSession();
 

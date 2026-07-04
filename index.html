@@ -11,7 +11,7 @@
     <div id="root"></div>
     <!-- Fuerza recarga si hay deploy nuevo (subir BUILD_VERSION en cada deploy) -->
     <script>
-      (function(){var v="20260703_2";var sk="qn_session_v2";var sv=localStorage.getItem("qn_build");if(sv&&sv!==v){sessionStorage.removeItem(sk);localStorage.removeItem(sk);localStorage.removeItem("quinela_user");location.reload()}if(!sv)localStorage.setItem("qn_build",v);window.addEventListener("storage",function(e){if(e.key==="qn_build"&&e.newValue&&e.newValue!==v){sessionStorage.removeItem(sk);localStorage.removeItem(sk);localStorage.removeItem("quinela_user");location.reload()}})})();
+      (function(){var v="20260703_2";var sv=localStorage.getItem("qn_build");if(sv&&sv!==v){sessionStorage.removeItem("qn_session");localStorage.removeItem("qn_session");localStorage.removeItem("quinela_user");location.reload()}if(!sv)localStorage.setItem("qn_build",v);window.addEventListener("storage",function(e){if(e.key==="qn_build"&&e.newValue&&e.newValue!==v){sessionStorage.removeItem("qn_session");localStorage.removeItem("qn_session");localStorage.removeItem("quinela_user");location.reload()}})})();
     </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>

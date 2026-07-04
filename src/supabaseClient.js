@@ -22,7 +22,7 @@ export const supabase = db;
 export const ADMIN_USERNAME = "luis02";
 export const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 
-const SESSION_KEY = "qn_session_v2";
+const SESSION_KEY = "qn_session";
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
 
 export function saveSession(userData) {
