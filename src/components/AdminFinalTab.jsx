@@ -214,7 +214,10 @@ export default function AdminFinalTab() {
         golesS = Number(p.goles_local);
       }
       
-      const key = `${p.equipo_local}-${p.goles_local}-${p.equipo_visitante}-${p.goles_visitante}`;
+      let key = `${p.equipo_local}-${p.goles_local}-${p.equipo_visitante}-${p.goles_visitante}`;
+      if (Number(p.goles_local) === Number(p.goles_visitante)) {
+        key += `-${p.campeon || ''}`;
+      }
       if (!countByPred[key]) countByPred[key] = 0;
       countByPred[key]++;
       

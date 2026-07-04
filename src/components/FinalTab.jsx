@@ -385,7 +385,8 @@ export default function FinalTab({ user }) {
             </div>
           )}
 
-          {isClosed && predConEstado.length > 0 && (
+          {/* Temporalmente deshabilitado — quitar false && para reactivar */}
+          {false && isClosed && predConEstado.length > 0 && (
             <div className="final-standings">
               <div className="fst-header">
                 <span className="fst-title">Tabla de participantes</span>
