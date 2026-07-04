@@ -26,6 +26,12 @@ export default function FinalTab({ user }) {
 
   useEffect(() => { load(); }, []);
 
+  useEffect(() => {
+    if (campeon && campeon !== localSel && campeon !== visitSel) {
+      setCampeon("");
+    }
+  }, [localSel, visitSel]);
+
   const load = async () => {
     setLoading(true);
     const [{ data: cfgs }, { data: eqs }, { data: pred }, { data: preds }, { data: usrs }] = await Promise.all([
@@ -297,7 +303,12 @@ export default function FinalTab({ user }) {
                           className="bk-score-input"
                           type="number" min="0" inputMode="numeric"
                           value={golesL}
-                          onChange={e => setGolesL(e.target.value === "" ? "" : Math.max(0, parseInt(e.target.value, 10)))}
+                          onChange={e => {
+                            const v = e.target.value;
+                            if (v === "") { setGolesL(""); return; }
+                            const n = parseInt(v, 10);
+                            if (!isNaN(n)) setGolesL(Math.max(0, n));
+                          }}
                           placeholder="0"
                         />
                         <span className="bk-score-dash">–</span>
@@ -305,7 +316,12 @@ export default function FinalTab({ user }) {
                           className="bk-score-input"
                           type="number" min="0" inputMode="numeric"
                           value={golesV}
-                          onChange={e => setGolesV(e.target.value === "" ? "" : Math.max(0, parseInt(e.target.value, 10)))}
+                          onChange={e => {
+                            const v = e.target.value;
+                            if (v === "") { setGolesV(""); return; }
+                            const n = parseInt(v, 10);
+                            if (!isNaN(n)) setGolesV(Math.max(0, n));
+                          }}
                           placeholder="0"
                         />
                       </div>
@@ -350,7 +366,7 @@ export default function FinalTab({ user }) {
                   <button
                     className="bk-save-btn"
                     onClick={handleSave}
-                    disabled={saving || !localSel || !visitSel || golesL === "" || golesV === ""}
+                    disabled={saving || !localSel || !visitSel || golesL === "" || golesV === "" || (Number(golesL) === Number(golesV) && (!campeon || (campeon !== localSel && campeon !== visitSel)))}
                   >
                     {saving ? (
                       <span className="bk-save-loading">Guardando…</span>
