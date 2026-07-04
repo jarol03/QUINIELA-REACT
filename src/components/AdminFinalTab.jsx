@@ -18,6 +18,7 @@ export default function AdminFinalTab() {
   const [usuarios,     setUsuarios]     = useState([]);
   const [loading,      setLoading]      = useState(true);
   const [toast,        setToast]        = useState("");
+  const [resCampeon,   setResCampeon]   = useState("");
 
   // Config form
   const [fechaLimite, setFechaLimite]   = useState("");
@@ -86,12 +87,27 @@ export default function AdminFinalTab() {
     if (!resLocal || !resVisit || resGolesL === "" || resGolesV === "") {
       showToast("Completa todos los campos del resultado."); return;
     }
+    if (resLocal === resVisit) {
+      showToast("Los dos equipos no pueden ser el mismo."); return;
+    }
+
+    let finalCampeon = "";
+    if (Number(resGolesL) === Number(resGolesV)) {
+      if (!resCampeon || (resCampeon !== resLocal && resCampeon !== resVisit)) {
+        showToast("Selecciona el campeón de la final (desempate)."); return;
+      }
+      finalCampeon = resCampeon;
+    } else {
+      finalCampeon = Number(resGolesL) > Number(resGolesV) ? resLocal : resVisit;
+    }
+
     setSavingRes(true);
     const payload = {
       equipo_local_real:      resLocal,
       equipo_visitante_real:  resVisit,
       goles_local_real:       Number(resGolesL),
       goles_visitante_real:   Number(resGolesV),
+      campeon_real:           finalCampeon,
     };
     if (config) {
       await supabase.from("final_config").update(payload).eq("id", config.id);
@@ -108,6 +124,7 @@ export default function AdminFinalTab() {
     await supabase.from("final_config").update({
       equipo_local_real: null, equipo_visitante_real: null,
       goles_local_real: null, goles_visitante_real: null,
+      campeon_real: null,
     }).eq("id", config.id);
     await load();
     showToast("Resultado eliminado");
@@ -152,7 +169,8 @@ export default function AdminFinalTab() {
     p.equipo_local     === config.equipo_local_real &&
     p.equipo_visitante === config.equipo_visitante_real &&
     Number(p.goles_local)     === Number(config.goles_local_real) &&
-    Number(p.goles_visitante) === Number(config.goles_visitante_real)
+    Number(p.goles_visitante) === Number(config.goles_visitante_real) &&
+    (Number(p.goles_local) === Number(p.goles_visitante) ? p.campeon === config.campeon_real : true)
   );
 
   const generarDataPdf = () => {
@@ -181,7 +199,11 @@ export default function AdminFinalTab() {
       let subcampeon = p.equipo_visitante;
       let golesC = Number(p.goles_local);
       let golesS = Number(p.goles_visitante);
-      if (Number(p.goles_visitante) > Number(p.goles_local)) {
+      
+      if (Number(p.goles_local) === Number(p.goles_visitante)) {
+        campeon = p.campeon || p.equipo_local;
+        subcampeon = campeon === p.equipo_local ? p.equipo_visitante : p.equipo_local;
+      } else if (Number(p.goles_visitante) > Number(p.goles_local)) {
         campeon = p.equipo_visitante;
         subcampeon = p.equipo_local;
         golesC = Number(p.goles_visitante);
@@ -316,7 +338,26 @@ export default function AdminFinalTab() {
                         {equipos.map(e => <option key={e.nombre} value={e.nombre} style={{ backgroundColor: "#1e293b", color: "#fff" }}>{e.nombre}</option>)}
                       </select>
                     </div>
-                    <button className="admin-btn-primary w-full" onClick={saveResultado} disabled={savingRes}>
+
+                    {resLocal && resVisit && resGolesL !== "" && resGolesV !== "" && Number(resGolesL) === Number(resGolesV) && (
+                      <div className="admin-card" style={{ background: "rgba(0,0,0,0.2)", marginTop: 10 }}>
+                        <p style={{ margin: "0 0 10px 0", fontSize: "0.9rem", color: "var(--text-color)", textAlign: "center" }}>🏆 Empate. ¿Quién es el campeón?</p>
+                        <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+                          <button
+                            className={`admin-btn-secondary ${resCampeon === resLocal ? "active" : ""}`}
+                            onClick={() => setResCampeon(resLocal)}
+                            style={{ borderColor: resCampeon === resLocal ? "var(--primary)" : "", background: resCampeon === resLocal ? "rgba(43,212,125,0.1)" : "" }}
+                          >{resLocal}</button>
+                          <button
+                            className={`admin-btn-secondary ${resCampeon === resVisit ? "active" : ""}`}
+                            onClick={() => setResCampeon(resVisit)}
+                            style={{ borderColor: resCampeon === resVisit ? "var(--primary)" : "", background: resCampeon === resVisit ? "rgba(43,212,125,0.1)" : "" }}
+                          >{resVisit}</button>
+                        </div>
+                      </div>
+                    )}
+
+                    <button className="admin-btn-primary w-full" onClick={saveResultado} disabled={savingRes} style={{ marginTop: 15 }}>
                       {savingRes ? "Guardando..." : "Guardar resultado final"}
                     </button>
                   </div>

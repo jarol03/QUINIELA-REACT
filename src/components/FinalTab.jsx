@@ -19,6 +19,7 @@ export default function FinalTab({ user }) {
   const [visitSel,   setVisitSel]   = useState("");
   const [golesL,     setGolesL]     = useState("");
   const [golesV,     setGolesV]     = useState("");
+  const [campeon,    setCampeon]    = useState("");
   const [saving,     setSaving]     = useState(false);
   const [loading,    setLoading]    = useState(true);
   const [toast,      setToast]      = useState({ msg: "", type: "success" });
@@ -44,6 +45,7 @@ export default function FinalTab({ user }) {
       setVisitSel(pred.equipo_visitante);
       setGolesL(pred.goles_local);
       setGolesV(pred.goles_visitante);
+      setCampeon(pred.campeon || "");
     }
     setLoading(false);
   };
@@ -58,7 +60,8 @@ export default function FinalTab({ user }) {
     miPred.equipo_local     === config.equipo_local_real &&
     miPred.equipo_visitante === config.equipo_visitante_real &&
     Number(miPred.goles_local)     === Number(config.goles_local_real) &&
-    Number(miPred.goles_visitante) === Number(config.goles_visitante_real)
+    Number(miPred.goles_visitante) === Number(config.goles_visitante_real) &&
+    (Number(miPred.goles_local) === Number(miPred.goles_visitante) ? miPred.campeon === config.campeon_real : true)
   );
 
   const handleSave = async () => {
@@ -68,6 +71,17 @@ export default function FinalTab({ user }) {
     if (localSel === visitSel) {
       showToast("Los dos equipos no pueden ser el mismo.", "error"); return;
     }
+
+    let finalCampeon = "";
+    if (Number(golesL) === Number(golesV)) {
+      if (!campeon || (campeon !== localSel && campeon !== visitSel)) {
+        showToast("Selecciona el campeón de la final (desempate).", "error"); return;
+      }
+      finalCampeon = campeon;
+    } else {
+      finalCampeon = Number(golesL) > Number(golesV) ? localSel : visitSel;
+    }
+
     setSaving(true);
     const payload = {
       usuario_id:       user.id,
@@ -75,6 +89,7 @@ export default function FinalTab({ user }) {
       equipo_visitante: visitSel,
       goles_local:      Number(golesL),
       goles_visitante:  Number(golesV),
+      campeon:          finalCampeon,
       updated_at:       new Date().toISOString(),
     };
     const { error } = await supabase
@@ -118,7 +133,8 @@ export default function FinalTab({ user }) {
       p.equipo_local     === config.equipo_local_real &&
       p.equipo_visitante === config.equipo_visitante_real &&
       Number(p.goles_local)     === Number(config.goles_local_real) &&
-      Number(p.goles_visitante) === Number(config.goles_visitante_real);
+      Number(p.goles_visitante) === Number(config.goles_visitante_real) &&
+      (Number(p.goles_local) === Number(p.goles_visitante) ? p.campeon === config.campeon_real : true);
     return { ...p, u, localElim, visitElim, enJuego, esGanador };
   }).sort((a, b) => {
     if (a.esGanador && !b.esGanador) return -1;
@@ -281,7 +297,7 @@ export default function FinalTab({ user }) {
                           className="bk-score-input"
                           type="number" min="0" inputMode="numeric"
                           value={golesL}
-                          onChange={e => setGolesL(Math.max(0, parseInt(e.target.value) || 0))}
+                          onChange={e => setGolesL(e.target.value === "" ? "" : Math.max(0, parseInt(e.target.value, 10)))}
                           placeholder="0"
                         />
                         <span className="bk-score-dash">–</span>
@@ -289,7 +305,7 @@ export default function FinalTab({ user }) {
                           className="bk-score-input"
                           type="number" min="0" inputMode="numeric"
                           value={golesV}
-                          onChange={e => setGolesV(Math.max(0, parseInt(e.target.value) || 0))}
+                          onChange={e => setGolesV(e.target.value === "" ? "" : Math.max(0, parseInt(e.target.value, 10)))}
                           placeholder="0"
                         />
                       </div>
@@ -302,12 +318,32 @@ export default function FinalTab({ user }) {
 
                   {localSel && visitSel && golesL !== "" && golesV !== "" && (
                     <div className="bk-final-preview">
-                      <span className="bk-fp-campeon">
-                        🏆 Campeón: {" "}
-                        <strong>
-                          {Number(golesL) >= Number(golesV) ? localSel : visitSel}
-                        </strong>
-                      </span>
+                      {Number(golesL) === Number(golesV) ? (
+                        <div className="bk-tie-breaker">
+                          <p style={{ margin: "0 0 10px 0", fontSize: "0.9rem", color: "var(--text-color)" }}>🏆 Resultado en empate. ¿Quién ganará el campeonato?</p>
+                          <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+                            <button
+                              className={`admin-btn-secondary ${campeon === localSel ? "active" : ""}`}
+                              onClick={() => !isClosed && setCampeon(localSel)}
+                              disabled={isClosed}
+                              style={{ borderColor: campeon === localSel ? "var(--primary)" : "", background: campeon === localSel ? "rgba(43,212,125,0.1)" : "" }}
+                            >{localSel}</button>
+                            <button
+                              className={`admin-btn-secondary ${campeon === visitSel ? "active" : ""}`}
+                              onClick={() => !isClosed && setCampeon(visitSel)}
+                              disabled={isClosed}
+                              style={{ borderColor: campeon === visitSel ? "var(--primary)" : "", background: campeon === visitSel ? "rgba(43,212,125,0.1)" : "" }}
+                            >{visitSel}</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="bk-fp-campeon">
+                          🏆 Campeón: {" "}
+                          <strong>
+                            {Number(golesL) > Number(golesV) ? localSel : visitSel}
+                          </strong>
+                        </span>
+                      )}
                     </div>
                   )}
 
