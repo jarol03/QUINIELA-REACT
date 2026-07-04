@@ -88,6 +88,10 @@ export default function FinalTab({ user }) {
       finalCampeon = Number(golesL) > Number(golesV) ? localSel : visitSel;
     }
 
+    if (!finalCampeon) {
+      showToast("Error: no se pudo determinar el campeón.", "error"); return;
+    }
+
     setSaving(true);
     const payload = {
       usuario_id:       user.id,

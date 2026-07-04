@@ -101,6 +101,10 @@ export default function AdminFinalTab() {
       finalCampeon = Number(resGolesL) > Number(resGolesV) ? resLocal : resVisit;
     }
 
+    if (!finalCampeon) {
+      showToast("Error: no se pudo determinar el campeón."); return;
+    }
+
     setSavingRes(true);
     const payload = {
       equipo_local_real:      resLocal,
