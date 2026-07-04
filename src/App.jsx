@@ -20,7 +20,7 @@ export default function App() {
     checkSession();
   }, []);
 
-  // Verifica cada 1 min si hay deploy nuevo; si cambió, recarga
+  // Al volver a la pestaña verifica si hay deploy nuevo; si cambió, recarga
   useEffect(() => {
     let mounted = true;
     const check = async () => {
@@ -40,11 +40,8 @@ export default function App() {
     };
     check();
     const onVisible = () => { if (document.visibilityState === "visible") check(); };
-    const onFocus = () => { check(); };
     document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("focus", onFocus);
-    const id = setInterval(check, 60 * 1000);
-    return () => { mounted = false; document.removeEventListener("visibilitychange", onVisible); window.removeEventListener("focus", onFocus); clearInterval(id); };
+    return () => { mounted = false; document.removeEventListener("visibilitychange", onVisible); };
   }, []);
 
   const checkSession = async () => {
