@@ -396,10 +396,10 @@ export default function PDFExportModal({
             } else {
               // Campeon
               doc.setFont("helvetica", "bold");
-              doc.setFontSize(fs.row - 2);
+              doc.setFontSize(fs.row - 2.5);
               doc.setTextColor(0, 210, 140);
               const champTxt = truncateText(doc, row.campeon || "", colW * 0.16);
-              doc.text(champTxt, cx + colW * 0.42, nameY);
+              doc.text(champTxt, cx + colW * 0.42, nameY - 0.3);
               
               // Resultado
               doc.setFontSize(fs.row - 1);
