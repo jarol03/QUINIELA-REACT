@@ -124,26 +124,50 @@ export default function PDFExportModal({
 
       let contentY = subtitle ? 26 : 22;
 
-      if (type === "previas" && extraHeader?.barData) {
-        const barW = (W - PAD * 2) / 3;
+      if ((type === "previas" || type === "final") && extraHeader?.barData) {
+        if (type === "final" && extraHeader.stats) {
+          // Draw "Con Vida" / "Eliminados"
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(240, 244, 255);
+          doc.text("Participantes", PAD, contentY);
+          
+          doc.setFillColor(0, 200, 140);
+          doc.roundedRect(PAD + 25, contentY - 4, 30, 6, 1, 1, "F");
+          doc.setTextColor(10, 20, 30);
+          doc.text(`Con Vida  ${extraHeader.stats.pctVivos}%`, PAD + 27, contentY + 0.5);
+
+          doc.setFillColor(248, 113, 113);
+          doc.roundedRect(PAD + 60, contentY - 4, 30, 6, 1, 1, "F");
+          doc.setTextColor(10, 20, 30);
+          doc.text(`Eliminados  ${extraHeader.stats.pctMuertos}%`, PAD + 62, contentY + 0.5);
+          
+          contentY += 8;
+        }
+
+        const barW = (W - PAD * 2) / Math.min(extraHeader.barData.length, 5); // up to 5 bars in a row
         extraHeader.barData.forEach((b, i) => {
-          const bx = PAD + i * (barW + 3);
+          const rowIdx = Math.floor(i / 5);
+          const colIdx = i % 5;
+          const bx = PAD + colIdx * (barW + 3);
+          const yOff = contentY + rowIdx * 10;
           doc.setFontSize(7.5);
           doc.setFont("helvetica", "bold");
           doc.setTextColor(...b.color);
-          doc.text(b.label, bx, contentY);
+          doc.text(b.label, bx, yOff);
           doc.setFont("helvetica", "normal");
           doc.setTextColor(180, 195, 220);
-          doc.text(`${b.pct}%  (${b.count})`, bx + barW - 1, contentY, {
+          doc.text(`${b.pct}%  (${b.count})`, bx + barW - 1, yOff, {
             align: "right",
           });
           doc.setFillColor(30, 36, 58);
-          doc.roundedRect(bx, contentY + 1.5, barW, 2.5, 0.8, 0.8, "F");
+          doc.roundedRect(bx, yOff + 1.5, barW, 2.5, 0.8, 0.8, "F");
           doc.setFillColor(...b.color);
           const fw = Math.max((b.pct / 100) * barW, 0.5);
-          doc.roundedRect(bx, contentY + 1.5, fw, 2.5, 0.8, 0.8, "F");
+          doc.roundedRect(bx, yOff + 1.5, fw, 2.5, 0.8, 0.8, "F");
         });
-        contentY += 10;
+        const numRows = Math.ceil(extraHeader.barData.length / 5);
+        contentY += numRows * 10;
       }
 
       doc.setDrawColor(30, 42, 72);
@@ -180,6 +204,11 @@ export default function PDFExportModal({
           } else {
             doc.text("PTS", cx + colW * 0.9, contentY, { align: "center" });
           }
+        } else if (type === "final") {
+          doc.text("PARTICIPANTE", cx, contentY);
+          doc.text("CAMPEÓN", cx + colW * 0.45, contentY);
+          doc.text("RES", cx + colW * 0.70, contentY, { align: "center" });
+          doc.text("PREMIO", rightEdge - 1, contentY, { align: "right" });
         } else {
           doc.text("PARTICIPANTE", cx, contentY);
           doc.text("MARCADOR", rightEdge - scoreBlockWidth / 2, contentY, {
@@ -298,6 +327,62 @@ export default function PDFExportModal({
                 align: "center",
               });
             }
+          } else if (type === "final") {
+            const nm = row.nombre || row.username || "";
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(220, 230, 248);
+
+            let nameFS = fs.row;
+            doc.setFontSize(nameFS);
+            let displayName = nm;
+            // Shorten name more aggressively for final
+            const maxNameW = colW * 0.40;
+            while (doc.getTextWidth(displayName) > maxNameW && nameFS > 7) {
+              nameFS -= 0.5;
+              doc.setFontSize(nameFS);
+            }
+            if (doc.getTextWidth(displayName) > maxNameW) {
+              displayName = truncateText(doc, nm, maxNameW);
+            }
+            doc.text(displayName, cx + 1, nameY);
+
+            // Campeon
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(fs.row - 1);
+            doc.setTextColor(0, 210, 140);
+            const champTxt = truncateText(doc, row.campeon || "", colW * 0.20);
+            doc.text(champTxt, cx + colW * 0.45, nameY);
+            
+            // Resultado
+            doc.setTextColor(200, 215, 240);
+            doc.text(`${row.goles_campeon} - ${row.goles_subcampeon}`, cx + colW * 0.70, nameY, { align: "center" });
+            
+            // Subcampeon abbreviated if there was space, but let's skip subcampeon text or put it below
+            if (hasSubName || true) { // Always show subcampeon below if we want
+              doc.setFontSize(fs.row - 2.5);
+              doc.setFont("helvetica", "normal");
+              doc.setTextColor(120, 135, 160);
+              const subcTxt = truncateText(doc, `vs ${row.subcampeon || ""}`, colW * 0.35);
+              doc.text(subcTxt, cx + colW * 0.45, subNameY);
+            }
+            
+            if (hasSubName) {
+              doc.setFontSize(fs.row - 2.5);
+              doc.setFont("helvetica", "normal");
+              doc.setTextColor(80, 100, 140);
+              doc.text(
+                truncateText(doc, `@${row.username}`, maxNameW),
+                cx + 1,
+                subNameY,
+              );
+            }
+
+            // Premio
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(fs.row);
+            doc.setTextColor(251, 191, 36); // gold
+            const premioStr = `L ${Number(row.premio || 0).toLocaleString("es-HN", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            doc.text(premioStr, rightEdge - 1, nameY, { align: "right" });
           } else {
             // MODO PREVIAS
             const nm = row.nombre || row.username || "";
@@ -395,7 +480,7 @@ export default function PDFExportModal({
         .replace(/-+/g, "-")             // Evita múltiples guiones
         .toLowerCase();
         
-      const fileName = `${type === "puntos" ? "Ranking" : "previa"}-${safeTitle}.pdf`;
+      const fileName = `${type === "puntos" ? "Ranking" : type === "final" ? "Final" : "Previa"}-${safeTitle}.pdf`;
 
       // Método robusto para Chrome (Manual Blob + Delay)
       const blob = doc.output("blob");
@@ -540,8 +625,15 @@ export default function PDFExportModal({
                         >
                           <span>{row.nombre || row.username}</span>
                           <span style={{ color: "#00d28c" }}>
-                            {row.goles_local}-{row.goles_visitante}{" "}
-                            <b>{row.gep}</b>
+                            {type === "final" ? (
+                              <span>
+                                {row.campeon} <b>{row.goles_campeon}-{row.goles_subcampeon}</b>
+                              </span>
+                            ) : (
+                              <span>
+                                {row.goles_local}-{row.goles_visitante} <b>{row.gep}</b>
+                              </span>
+                            )}
                           </span>
                         </div>
                       ))}

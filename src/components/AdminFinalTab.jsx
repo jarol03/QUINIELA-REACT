@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import DateTimePicker, { formatDisplay } from "./DateTimePicker";
+import PDFExportModal from "./PDFExportModal";
 
 function fmtFecha(iso) {
   if (!iso) return "";
@@ -33,6 +34,14 @@ export default function AdminFinalTab() {
   const [nuevoEquipo, setNuevoEquipo] = useState("");
   const [nuevoEquipoLlave, setNuevoEquipoLlave] = useState(1);
   const [editandoLlave, setEditandoLlave] = useState(null); // {id, llave}
+
+  // PDF
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [pdfData, setPdfData] = useState([]);
+  const [pdfStats, setPdfStats] = useState(null);
+
+  // Buscador predicciones
+  const [searchPred, setSearchPred] = useState("");
 
   useEffect(() => { load(); }, []);
 
@@ -146,6 +155,92 @@ export default function AdminFinalTab() {
     Number(p.goles_visitante) === Number(config.goles_visitante_real)
   );
 
+  const generarDataPdf = () => {
+    const eliminadosSet = new Set(eliminados.map(e => e.nombre));
+    
+    let vivos = [];
+    let muertosCount = 0;
+    
+    predicciones.forEach(p => {
+      const u = usuarios.find(u => u.id === p.usuario_id);
+      if (!u) return;
+      
+      const localElim = eliminadosSet.has(p.equipo_local);
+      const visitElim = eliminadosSet.has(p.equipo_visitante);
+      
+      if (!localElim && !visitElim) {
+        vivos.push({ ...p, nombre: u.nombre, username: u.username });
+      } else {
+        muertosCount++;
+      }
+    });
+
+    const countByPred = {};
+    vivos.forEach(p => {
+      let campeon = p.equipo_local;
+      let subcampeon = p.equipo_visitante;
+      let golesC = Number(p.goles_local);
+      let golesS = Number(p.goles_visitante);
+      if (Number(p.goles_visitante) > Number(p.goles_local)) {
+        campeon = p.equipo_visitante;
+        subcampeon = p.equipo_local;
+        golesC = Number(p.goles_visitante);
+        golesS = Number(p.goles_local);
+      }
+      
+      const key = `${p.equipo_local}-${p.goles_local}-${p.equipo_visitante}-${p.goles_visitante}`;
+      if (!countByPred[key]) countByPred[key] = 0;
+      countByPred[key]++;
+      
+      p.campeon = campeon;
+      p.subcampeon = subcampeon;
+      p.goles_campeon = golesC;
+      p.goles_subcampeon = golesS;
+      p.predKey = key;
+    });
+
+    vivos.forEach(p => {
+      p.premio = 1000 / countByPred[p.predKey];
+    });
+
+    vivos.sort((a, b) => {
+      if (a.campeon !== b.campeon) return a.campeon.localeCompare(b.campeon);
+      if (a.goles_campeon !== b.goles_campeon) return b.goles_campeon - a.goles_campeon;
+      if (a.goles_subcampeon !== b.goles_subcampeon) return b.goles_subcampeon - a.goles_subcampeon;
+      const nA = (a.nombre || a.username || "").toLowerCase();
+      const nB = (b.nombre || b.username || "").toLowerCase();
+      return nA.localeCompare(nB);
+    });
+
+    const total = vivos.length + muertosCount;
+    const pctVivos = total > 0 ? Math.round((vivos.length / total) * 100) : 0;
+    const pctMuertos = total > 0 ? 100 - pctVivos : 0;
+
+    const champCounts = {};
+    vivos.forEach(p => {
+      champCounts[p.campeon] = (champCounts[p.campeon] || 0) + 1;
+    });
+    
+    const champStats = Object.keys(champCounts).map(c => ({
+      label: c,
+      count: champCounts[c],
+      pct: vivos.length > 0 ? Math.round((champCounts[c] / vivos.length) * 100) : 0
+    })).sort((a, b) => b.count - a.count).slice(0, 5);
+    
+    const colors = [
+      [251, 191, 36], // yellow
+      [0, 210, 140],  // green
+      [56, 189, 248], // cyan
+      [167, 139, 250], // purple
+      [248, 113, 113], // red
+    ];
+    champStats.forEach((st, i) => st.color = colors[i % colors.length]);
+
+    setPdfStats({ pctVivos, pctMuertos, barData: champStats });
+    setPdfData(vivos);
+    setShowPdfModal(true);
+  };
+
   return (
     <div className="puntos-tab">
       {toast && <div className="toast">{toast}</div>}
@@ -197,8 +292,8 @@ export default function AdminFinalTab() {
                     <div className="final-field-group">
                       <label className="dt-label">Equipo local (campeón o sub)</label>
                       <select className="admin-input" value={resLocal} onChange={e => setResLocal(e.target.value)}>
-                        <option value="">— Equipo local —</option>
-                        {equipos.map(e => <option key={e.nombre} value={e.nombre}>{e.nombre}</option>)}
+                        <option value="" style={{ backgroundColor: "#1e293b", color: "#fff" }}>— Equipo local —</option>
+                        {equipos.map(e => <option key={e.nombre} value={e.nombre} style={{ backgroundColor: "#1e293b", color: "#fff" }}>{e.nombre}</option>)}
                       </select>
                     </div>
                     <div className="af-goles-row">
@@ -217,8 +312,8 @@ export default function AdminFinalTab() {
                     <div className="final-field-group">
                       <label className="dt-label">Equipo visitante</label>
                       <select className="admin-input" value={resVisit} onChange={e => setResVisit(e.target.value)}>
-                        <option value="">— Equipo visitante —</option>
-                        {equipos.map(e => <option key={e.nombre} value={e.nombre}>{e.nombre}</option>)}
+                        <option value="" style={{ backgroundColor: "#1e293b", color: "#fff" }}>— Equipo visitante —</option>
+                        {equipos.map(e => <option key={e.nombre} value={e.nombre} style={{ backgroundColor: "#1e293b", color: "#fff" }}>{e.nombre}</option>)}
                       </select>
                     </div>
                     <button className="admin-btn-primary w-full" onClick={saveResultado} disabled={savingRes}>
@@ -319,44 +414,74 @@ export default function AdminFinalTab() {
                 <span className="col-label" style={{ marginBottom: 0 }}>
                   Predicciones ({predicciones.length}/{usuarios.length})
                 </span>
-                {resultadoReal && ganadores.length > 0 && (
-                  <span className="af-ganadores-badge">🏆 {ganadores.length} ganador{ganadores.length !== 1 ? "es" : ""}</span>
-                )}
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  {resultadoReal && ganadores.length > 0 && (
+                    <span className="af-ganadores-badge">🏆 {ganadores.length} ganador{ganadores.length !== 1 ? "es" : ""}</span>
+                  )}
+                  <button className="admin-btn-secondary" onClick={generarDataPdf} disabled={predicciones.length === 0}>
+                    📄 Descargar PDF
+                  </button>
+                </div>
               </div>
 
               {predicciones.length === 0 ? (
                 <p className="dim-text">Nadie ha ingresado su predicción aún.</p>
               ) : (
-                <div className="af-preds-list">
-                  {usuarios.map(u => {
-                    const pred = predicciones.find(p => p.usuario_id === u.id);
-                    const esGanador = ganadores.some(g => g.usuario_id === u.id);
-                    return (
-                      <div key={u.id} className={`af-pred-row ${esGanador ? "af-pred-ganador" : ""} ${!pred ? "af-pred-missing" : ""}`}>
-                        <div className="af-pred-avatar">
-                          {(u.nombre || u.username).charAt(0).toUpperCase()}
+                <>
+                  <input
+                    className="admin-input"
+                    placeholder="🔍 Buscar participante..."
+                    value={searchPred}
+                    onChange={(e) => setSearchPred(e.target.value)}
+                    style={{ marginBottom: 12 }}
+                  />
+                  <div className="af-preds-list">
+                    {usuarios
+                      .filter(u => 
+                        (u.nombre || "").toLowerCase().includes(searchPred.toLowerCase()) ||
+                        (u.username || "").toLowerCase().includes(searchPred.toLowerCase())
+                      )
+                      .map(u => {
+                      const pred = predicciones.find(p => p.usuario_id === u.id);
+                      const esGanador = ganadores.some(g => g.usuario_id === u.id);
+                      return (
+                        <div key={u.id} className={`af-pred-row ${esGanador ? "af-pred-ganador" : ""} ${!pred ? "af-pred-missing" : ""}`}>
+                          <div className="af-pred-avatar">
+                            {(u.nombre || u.username).charAt(0).toUpperCase()}
+                          </div>
+                          <div className="af-pred-info">
+                            <span className="af-pred-nombre">{u.nombre || u.username}</span>
+                            {pred ? (
+                              <span className="af-pred-score">
+                                {pred.equipo_local} <strong>{pred.goles_local}–{pred.goles_visitante}</strong> {pred.equipo_visitante}
+                              </span>
+                            ) : (
+                              <span className="af-pred-sin">Sin predicción</span>
+                            )}
+                          </div>
+                          {esGanador && <span className="af-pred-trophy">🏆</span>}
+                          {!pred && <span className="af-pred-missing-dot">·</span>}
                         </div>
-                        <div className="af-pred-info">
-                          <span className="af-pred-nombre">{u.nombre || u.username}</span>
-                          {pred ? (
-                            <span className="af-pred-score">
-                              {pred.equipo_local} <strong>{pred.goles_local}–{pred.goles_visitante}</strong> {pred.equipo_visitante}
-                            </span>
-                          ) : (
-                            <span className="af-pred-sin">Sin predicción</span>
-                          )}
-                        </div>
-                        {esGanador && <span className="af-pred-trophy">🏆</span>}
-                        {!pred && <span className="af-pred-missing-dot">·</span>}
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </div>
           </div>
 
         </div>
+      )}
+
+      {showPdfModal && (
+        <PDFExportModal
+          open={showPdfModal}
+          onClose={() => setShowPdfModal(false)}
+          title="PRONÓSTICO SELECCIÓN CAMPEONA"
+          type="final"
+          data={pdfData}
+          extraHeader={{ barData: pdfStats?.barData, stats: pdfStats }}
+        />
       )}
     </div>
   );
