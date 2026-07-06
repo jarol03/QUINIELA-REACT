@@ -181,7 +181,7 @@ export default function AdminFinalTab() {
     const eliminadosSet = new Set(eliminados.map(e => e.nombre));
     
     let vivos = [];
-    let muertosCount = 0;
+    let muertos = [];
     
     const usersWithPred = new Set(predicciones.map(p => p.usuario_id));
     
@@ -195,7 +195,7 @@ export default function AdminFinalTab() {
       if (!localElim && !visitElim) {
         vivos.push({ ...p, nombre: u.nombre, username: u.username });
       } else {
-        muertosCount++;
+        muertos.push({ ...p, nombre: u.nombre, username: u.username, eliminado: true });
       }
     });
     
@@ -210,8 +210,8 @@ export default function AdminFinalTab() {
       }
     });
 
-    const countByPred = {};
-    vivos.forEach(p => {
+    // Procesar campeón/subcampeón para TODAS las predicciones (vivos + eliminados)
+    ;[...vivos, ...muertos].forEach(p => {
       if (p.sinPred) return;
       let campeon = p.equipo_local;
       let subcampeon = p.equipo_visitante;
@@ -228,6 +228,15 @@ export default function AdminFinalTab() {
         golesS = Number(p.goles_local);
       }
       
+      p.campeon = campeon;
+      p.subcampeon = subcampeon;
+      p.goles_campeon = golesC;
+      p.goles_subcampeon = golesS;
+    });
+
+    const countByPred = {};
+    vivos.forEach(p => {
+      if (p.sinPred) return;
       let key = `${p.equipo_local}-${p.goles_local}-${p.equipo_visitante}-${p.goles_visitante}`;
       if (Number(p.goles_local) === Number(p.goles_visitante)) {
         key += `-${p.campeon || ''}`;
@@ -235,10 +244,6 @@ export default function AdminFinalTab() {
       if (!countByPred[key]) countByPred[key] = 0;
       countByPred[key]++;
       
-      p.campeon = campeon;
-      p.subcampeon = subcampeon;
-      p.goles_campeon = golesC;
-      p.goles_subcampeon = golesS;
       p.predKey = key;
     });
 
@@ -263,9 +268,15 @@ export default function AdminFinalTab() {
       return nA.localeCompare(nB);
     });
 
+    muertos.sort((a, b) => {
+      const nA = (a.nombre || a.username || "").toLowerCase();
+      const nB = (b.nombre || b.username || "").toLowerCase();
+      return nA.localeCompare(nB);
+    });
+
     const sinPredCount = vivos.filter(p => p.sinPred).length;
     const conPred = vivos.filter(p => !p.sinPred);
-    const total = conPred.length + muertosCount;
+    const total = conPred.length + muertos.length;
     const pctVivos = total > 0 ? Math.round((conPred.length / total) * 100) : 0;
     const pctMuertos = total > 0 ? 100 - pctVivos : 0;
 
@@ -290,7 +301,7 @@ export default function AdminFinalTab() {
     champStats.forEach((st, i) => st.color = colors[i % colors.length]);
 
     setPdfStats({ pctVivos, pctMuertos, llenaron: predicciones.length, totalUsuarios: usuarios.length, barData: champStats });
-    setPdfData(vivos);
+    setPdfData([...vivos, ...muertos]);
     setShowPdfModal(true);
   };
 

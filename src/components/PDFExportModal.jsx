@@ -58,6 +58,8 @@ export default function PDFExportModal({
           const nB = (b.nombre || b.username || "").toLowerCase();
           return nA.localeCompare(nB, "es");
         }
+        if (a.eliminado && !b.eliminado) return 1;
+        if (!a.eliminado && b.eliminado) return -1;
         const cA = (a.campeon || "").toLowerCase();
         const cB = (b.campeon || "").toLowerCase();
         if (cA !== cB) return cA.localeCompare(cB, "es");
@@ -372,8 +374,9 @@ export default function PDFExportModal({
             }
           } else if (type === "final") {
             const nm = row.nombre || row.username || "";
+            const isElim = row.eliminado;
             doc.setFont("helvetica", "bold");
-            doc.setTextColor(220, 230, 248);
+            doc.setTextColor(isElim ? 248 : 220, isElim ? 113 : 230, isElim ? 113 : 248);
 
             let nameFS = fs.row - 1;
             doc.setFontSize(nameFS);
@@ -397,13 +400,13 @@ export default function PDFExportModal({
               // Campeon
               doc.setFont("helvetica", "bold");
               doc.setFontSize(fs.row - 2.5);
-              doc.setTextColor(0, 210, 140);
+              doc.setTextColor(isElim ? 248 : 0, isElim ? 160 : 210, isElim ? 160 : 140);
               const champTxt = truncateText(doc, row.campeon || "", colW * 0.16);
               doc.text(champTxt, cx + colW * 0.42, nameY - 0.3);
               
               // Resultado
               doc.setFontSize(fs.row - 1);
-              doc.setTextColor(200, 215, 240);
+              doc.setTextColor(isElim ? 248 : 200, isElim ? 160 : 215, isElim ? 175 : 240);
               const gC = row.goles_campeon != null ? row.goles_campeon : "–";
               const gS = row.goles_subcampeon != null ? row.goles_subcampeon : "–";
               doc.text(`${gC} - ${gS}`, cx + colW * 0.68, nameY, { align: "center" });
@@ -411,7 +414,7 @@ export default function PDFExportModal({
               // Subcampeon
               doc.setFontSize(fs.row - 3);
               doc.setFont("helvetica", "normal");
-              doc.setTextColor(120, 135, 160);
+              doc.setTextColor(isElim ? 180 : 120, isElim ? 120 : 135, isElim ? 120 : 160);
               const subcTxt = truncateText(doc, `vs ${row.subcampeon || ""}`, colW * 0.28);
               doc.text(subcTxt, cx + colW * 0.42, subNameY);
             }
@@ -430,7 +433,7 @@ export default function PDFExportModal({
             // Premio
             doc.setFont("helvetica", "bold");
             doc.setFontSize(fs.row - 1);
-            doc.setTextColor(251, 191, 36); // gold
+            doc.setTextColor(isElim ? 248 : 251, isElim ? 113 : 191, isElim ? 113 : 36);
             const premioStr = `L ${Number(row.premio || 0).toLocaleString("es-HN", {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             doc.text(premioStr, rightEdge - 1, nameY, { align: "right" });
           } else {
